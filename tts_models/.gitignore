@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+
+# downloaded model weights (re-fetched by setup steps in README.md)
+Inflect-Micro-v2/
+en_US-lessac-medium.onnx
+en_US-lessac-medium.onnx.json
+
+# generated per-run output, not source
+output_*.wav

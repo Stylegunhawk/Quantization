@@ -1,0 +1,7 @@
+torch
+kokoro
+piper-tts
+soundfile
+psutil
+numpy
+huggingface_hub
