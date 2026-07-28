@@ -5,3 +5,9 @@ soundfile
 psutil
 numpy
 huggingface_hub
+# streaming app (speak_mlx.py / speak_app.py) — Apple Silicon only
+mlx-audio
+sounddevice
+pyobjc-framework-Cocoa
+pyobjc-framework-Quartz
+pyobjc-framework-ApplicationServices

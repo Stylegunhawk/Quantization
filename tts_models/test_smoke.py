@@ -21,7 +21,11 @@ def test_piper_runs_and_logs():
     subprocess.run([sys.executable, str(DIR / "run_piper.py")], check=True, cwd=DIR)
     assert _wav_is_valid(DIR / "output_piper.wav")
     rows = list(csv.DictReader((DIR / "results.csv").open()))
-    assert any(r["model"] == "piper" for r in rows)
+    piper_rows = [r for r in rows if r["model"] == "piper"]
+    assert piper_rows
+    # Piper synthesises on the CPU, so its own process must burn measurable CPU time.
+    # Sampling cpu_percent() outside the fn() call reported ~0% here and looked plausible.
+    assert float(piper_rows[-1]["cpu_pct"]) > 10.0, piper_rows[-1]["cpu_pct"]
 
 
 def test_inflect_runs_and_logs():

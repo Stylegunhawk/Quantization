@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>Kokoro Speak</string>
+    <key>CFBundleDisplayName</key>
+    <string>Kokoro Speak</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.kokoro.speak</string>
+    <key>CFBundleExecutable</key>
+    <string>kokoro-speak</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <!-- No Dock icon, no menu bar: an accessory app. Activating one does not switch
+         Spaces, which is what lets the control panel appear over a fullscreen app. -->
+    <key>LSUIElement</key>
+    <true/>
+    <key>LSMinimumSystemVersion</key>
+    <string>13.0</string>
+</dict>
+</plist>

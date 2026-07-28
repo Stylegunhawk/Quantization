@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Auto-start Kokoro Speak at login and restart it if it dies. Only needed if you want
+     the restart-on-crash and the log; dragging Kokoro Speak.app into System Settings →
+     General → Login Items also works.
+
+     A template: launchd does no variable expansion and requires absolute paths, so
+     __REPO__ has to be substituted at install time. Run this from the repo directory:
+
+     Install:  sed "s|__REPO__|$PWD|g" com.kokoro.speak.plist > ~/Library/LaunchAgents/com.kokoro.speak.plist
+               launchctl load ~/Library/LaunchAgents/com.kokoro.speak.plist
+     Stop:     launchctl unload ~/Library/LaunchAgents/com.kokoro.speak.plist
+     Log:      tail -f /tmp/kokoro-speak.log
+
+     Re-run the install after moving the repo — the installed copy holds real paths. -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.kokoro.speak</string>
+    <!-- Launch through the bundle stub, not python directly, so the running process is
+         the app and its stdout ends up in the log below. -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>__REPO__/Kokoro Speak.app/Contents/MacOS/kokoro-speak</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>__REPO__</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <!-- Restart on a crash, but not on a clean exit — a clean exit is how the app
+         reports "another instance already owns the socket". -->
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+    <key>StandardOutPath</key>
+    <string>/tmp/kokoro-speak.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/kokoro-speak.log</string>
+</dict>
+</plist>

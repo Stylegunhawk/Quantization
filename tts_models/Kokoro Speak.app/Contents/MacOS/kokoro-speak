@@ -1,0 +1,27 @@
+#!/bin/sh
+# Launcher stub: the bundle is just Info.plist + this script, so there is no build step
+# and no frozen copy of the code to keep in sync. Edit speak_app.py and relaunch.
+
+# Launched from Finder there is no terminal, so without this any startup failure — a
+# missing venv, a macOS privacy denial — is completely silent. Cost us an hour once.
+[ -t 1 ] || exec >> /tmp/kokoro-speak.log 2>&1
+
+# cd -P first: without it, launching through a symlink (e.g. an alias in /Applications)
+# resolves the repo relative to the symlink's folder instead of the real bundle.
+HERE="$(cd "$(cd -P "$(dirname "$0")" && pwd)/../../.." && pwd)"
+
+# A child, deliberately not exec. exec would make python *this* process, which Spotlight
+# has already registered with LaunchServices as Kokoro Speak.app — but python's own
+# NSBundle is Python.app, and a process whose registration and bundle disagree is given
+# no menu bar slot at all: the status item exists, reports a zero-height window, and is
+# invisible forever. As a child it is unregistered and claims its own slot, exactly like
+# running speak_app.py from a terminal, which never had the bug. Launching through
+# launchd never went via LaunchServices, so this only ever broke via Spotlight/Finder.
+"$HERE/.venv/bin/python" -u "$HERE/speak_app.py" &
+child=$!
+# Nothing forwards signals to a child, so without this launchctl unload — or logging out —
+# leaves a 700MB model resident with no way to reach it.
+trap 'kill "$child" 2>/dev/null' TERM INT
+# Exit with the child's status, so the plist's KeepAlive{SuccessfulExit:false} still sees
+# the 0 that "already running" reports and doesn't respawn in a loop.
+wait "$child"
