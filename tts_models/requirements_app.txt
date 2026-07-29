@@ -1,0 +1,7 @@
+# Dependencies for the Kokoro Speak app (Apple Silicon only)
+numpy
+sounddevice
+mlx-audio
+pyobjc-framework-Cocoa
+pyobjc-framework-Quartz
+pyobjc-framework-ApplicationServices
