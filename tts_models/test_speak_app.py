@@ -9,6 +9,8 @@ those is how a suite becomes flaky. The one deliberate sleep left is in FakeStre
 standing in for realtime playback so that pausing is observable at all.
 """
 
+import socket
+import threading
 import time
 
 import numpy as np
@@ -286,6 +288,52 @@ def test_producer_failure_does_not_wedge_the_player():
     wait_until(lambda: fake.written, "serving thread wedged — a bad utterance killed the daemon")
 
 
+def test_mcp_speak_stop_status():
+    """The MCP tools are thin wrappers over PLAYER — this checks the wiring (server starts,
+    tool calls reach PLAYER), not playback logic, which the tests above already cover."""
+    import asyncio
+
+    from mcp.client.session import ClientSession
+    from mcp.client.streamable_http import streamable_http_client
+
+    speak_app.sd = fake = FakeSd()
+    speak_app.PLAYER = speak_app.Player(FakeModel(), NullUi())
+
+    # A real Kokoro Speak instance may already be running (e.g. via the launchd agent)
+    # and listening on the real MCP_PORT. Binding an ephemeral port instead of reusing
+    # the module default avoids the test silently driving that live instance — which
+    # would speak out loud for real, never touch `fake`, and fail on an unrelated
+    # timeout with a misleading message.
+    with socket.socket() as s:              # ponytail: tiny rebind race, beats colliding
+        s.bind(("127.0.0.1", 0))            # with the app that's probably on 8765
+        speak_app.MCP_PORT = s.getsockname()[1]
+
+    threading.Thread(target=speak_app.serve_mcp, daemon=True).start()
+
+    def port_open() -> bool:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            return s.connect_ex(("127.0.0.1", speak_app.MCP_PORT)) == 0
+
+    wait_until(port_open, "mcp server to start listening")
+
+    url = f"http://127.0.0.1:{speak_app.MCP_PORT}/mcp"
+
+    async def call(name: str, arguments: dict):
+        async with streamable_http_client(url) as (read, write):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
+                return await session.call_tool(name, arguments)
+
+    status_before = asyncio.run(call("status", {}))
+    assert not status_before.is_error, f"status tool failed: {status_before}"
+
+    asyncio.run(call("speak", {"text": "MCP test utterance."}))
+    wait_until(lambda: fake.written, "audio after speak() was called over MCP")
+
+    asyncio.run(call("stop", {}))
+    assert speak_app.PLAYER.stopped.is_set(), "PLAYER.cancel() was not triggered by the stop tool"
+
+
 if __name__ == "__main__":
     test_pause_resume_and_barge_in()
     test_speed_clamps()
@@ -294,4 +342,5 @@ if __name__ == "__main__":
     test_device_is_fed_silence_while_generating()
     test_speed_change_is_heard_within_two_sentences()
     test_producer_failure_does_not_wedge_the_player()
+    test_mcp_speak_stop_status()
     print("speak_app checks passed")

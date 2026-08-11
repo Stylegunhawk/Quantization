@@ -19,6 +19,7 @@ from pathlib import Path
 
 import numpy as np
 import sounddevice as sd
+from mcp.server import MCPServer
 from AppKit import (
     NSApplication,
     NSApplicationActivationPolicyAccessory,
@@ -64,6 +65,7 @@ from speak_mlx import REPO, SAMPLE_RATE, VOICE, split_sentences
 # ---- CONFIG ---------------------------------------------------------------
 SOCK_PATH = Path("/tmp/kokoro-speak.sock")
 LOCK_PATH = Path("/tmp/kokoro-speak.lock")
+MCP_PORT = 8765            # arbitrary unregistered port for the embedded MCP server
 SPEED = 1.0                # starting rate; ← → adjust it live
 SPEED_STEP = 0.1
 SPEED_RANGE = (0.5, 2.0)
@@ -468,6 +470,36 @@ def serve_socket() -> None:
             print("nothing selected")
 
 
+def serve_mcp() -> None:
+    server = MCPServer("kokoro-speak")
+
+    @server.tool()
+    def speak(text: str) -> str:
+        """Speak the given text aloud through the Kokoro Speak macOS app.
+        Requires the Kokoro Speak app to be running — if this tool is
+        unreachable, tell the user to open Kokoro Speak via Spotlight."""
+        PLAYER.submit(text)
+        return f"queued {len(text)} chars"
+
+    @server.tool()
+    def stop() -> str:
+        """Stop whatever Kokoro Speak is currently reading aloud."""
+        PLAYER.cancel()
+        return "stopped"
+
+    @server.tool()
+    def status() -> dict:
+        """Report whether Kokoro Speak is currently playing, and at what
+        progress and speed."""
+        return {
+            "playing": PLAYER.playing.is_set(),
+            "progress": PLAYER.progress,
+            "speed": PLAYER.speed,
+        }
+
+    server.run(transport="streamable-http", host="127.0.0.1", port=MCP_PORT)
+
+
 def install_hotkey() -> list:
     """Own the ⌥⌘S hotkey directly, so no Shortcuts.app or Services wiring is needed.
 
@@ -564,6 +596,7 @@ def main() -> None:
     global _HOTKEY
     _HOTKEY = install_hotkey()   # the monitors stop firing if these are garbage collected
     threading.Thread(target=serve_socket, daemon=True).start()
+    threading.Thread(target=serve_mcp, daemon=True).start()
     try:
         AppHelper.runEventLoop()
     finally:
