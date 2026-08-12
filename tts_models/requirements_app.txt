@@ -5,4 +5,5 @@ mlx-audio
 pyobjc-framework-Cocoa
 pyobjc-framework-Quartz
 pyobjc-framework-ApplicationServices
+pyobjc-framework-MediaPlayer
 mcp>=2,<3

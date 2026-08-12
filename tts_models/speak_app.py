@@ -50,6 +50,12 @@ from AppKit import (
 )
 from ApplicationServices import AXIsProcessTrustedWithOptions, kAXTrustedCheckOptionPrompt
 from Foundation import NSObject
+from MediaPlayer import (
+    MPMediaItemPropertyTitle,
+    MPNowPlayingInfoCenter,
+    MPNowPlayingPlaybackStatePlaying,
+    MPNowPlayingPlaybackStateStopped,
+)
 from mlx_audio.tts.utils import load_model
 from PyObjCTools import AppHelper
 from Quartz import (
@@ -232,6 +238,15 @@ class Ui:
         AppHelper.callAfter(self.status_item.button().setTitle_, glyph)
 
     def show(self, text: str) -> None:
+        # Registering a Now Playing session is what tells macOS's Bluetooth stack this app
+        # wants audio focus — confirmed by comparing against afplay, which plays fine but,
+        # like this app before this change, never took over a multipoint headset already
+        # streaming from a phone. Plain CoreAudio writes (afplay, sounddevice) don't get
+        # that switch; apps that register here (e.g. any browser) do.
+        center = MPNowPlayingInfoCenter.defaultCenter()
+        center.setNowPlayingInfo_({MPMediaItemPropertyTitle: "Kokoro Speak"})
+        center.setPlaybackState_(MPNowPlayingPlaybackStatePlaying)
+
         def run() -> None:
             self.label.setStringValue_(text)
             app = NSApplication.sharedApplication()
@@ -249,6 +264,10 @@ class Ui:
         AppHelper.callAfter(self.label.setStringValue_, text)
 
     def hide(self) -> None:
+        center = MPNowPlayingInfoCenter.defaultCenter()
+        center.setPlaybackState_(MPNowPlayingPlaybackStateStopped)
+        center.setNowPlayingInfo_(None)
+
         def run() -> None:
             if self.status_item is not None:
                 self.status_item.button().setTitle_(ICON_IDLE)
