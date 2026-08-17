@@ -1,0 +1,8 @@
+# Dependencies for the Dictate app (Apple Silicon only)
+numpy
+sounddevice
+soundfile
+mlx-audio
+pyobjc-framework-Cocoa
+pyobjc-framework-Quartz
+pyobjc-framework-ApplicationServices

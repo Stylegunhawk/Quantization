@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>Dictate</string>
+    <key>CFBundleDisplayName</key>
+    <string>Dictate</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.dictate.stt</string>
+    <key>CFBundleExecutable</key>
+    <string>dictate</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <!-- No Dock icon, no menu bar of its own: an accessory app. Also what keeps the
+         floating panel from yanking you to another Space when it appears. -->
+    <key>LSUIElement</key>
+    <true/>
+    <!-- Shown in the microphone permission prompt. macOS attributes the request to this
+         bundle rather than to python, because the launcher stub is the responsible
+         process — which is the point of launching this way: one grant named "Dictate"
+         instead of one attached to an interpreter path inside a venv. -->
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Dictate records what you say so it can transcribe it into the app you are typing in. Audio is transcribed on this Mac and never leaves it.</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>13.0</string>
+</dict>
+</plist>

@@ -1,0 +1,6 @@
+mlx
+mlx-audio
+miniaudio
+soundfile
+psutil
+huggingface_hub
