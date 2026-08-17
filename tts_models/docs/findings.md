@@ -30,6 +30,16 @@ read `0`. Rows logged after the fix report a blank `gpu_mem_mb` for the
 latter case instead. Treat CPU% and `gpu_mem_mb=0` in older rows as noise/
 ambiguous, not signal.
 
+**Data hygiene note (2026-08-13):** the RAM columns changed meaning. Every
+`ram_peak_mb` logged before this date is a single RSS read taken *after* the
+call returned — a snapshot, not a peak (Bugs #9, #10) — which is why so many
+`ram_spike_mb` values are negative. Rows from 2026-08-13 on are a polled peak
+and can never fall below their baseline, so **RAM columns are not comparable
+across that date**; the negative values are artifacts, not measurements. Four
+columns were also appended (`cpu_peak_pct`, `mlx_peak_mb`, `swap_delta_mb`,
+`sys_avail_min_mb`) and are blank for older rows. Latency and RTF columns are
+unaffected throughout.
+
 **88-char sentence:**
 
 | model | device | latency (s) | RTF | ram spike (MB) | gpu mem (MB) |
@@ -63,9 +73,11 @@ the recommendation below uses the 231-char ranking.
 **MLX-Kokoro vs PyTorch-Kokoro**, same weights in principle, is the other
 big change from the longer sentence: on 88 chars both back ends were ~0.79s
 (no visible difference); on 231 chars MLX is **~2.2x faster** (2.2–2.4s vs
-5.25s) and doesn't carry Kokoro's 700+ MB GPU footprint the same way (MLX
-uses Apple Silicon's unified memory, not a separate GPU allocation torch can
-see — not directly comparable, see Bugs #4/MLX note below). Quantization
+5.25s). ~~and doesn't carry Kokoro's 700+ MB GPU footprint the same way~~ —
+**that memory claim was wrong** and is retracted: it inferred an advantage from
+a blank column. MLX's own allocator reports **~1.46–1.50 GB** during synthesis,
+*more* than PyTorch-Kokoro's 583–819MB `gpu_mem_mb`, so pick MLX for latency,
+not for memory (Bug #11). Quantization
 (bf16 vs 8bit vs 4bit) made no measurable latency difference in either test —
 all three variants land within ~0.02–0.03s of each other. If precision
 matters for quality, there's no speed reason to pick a smaller quantization;
@@ -113,7 +125,8 @@ Based on the 231-char ranking (the more representative comparison):
   same weights, no crash risk from precision tricks (PyTorch's MPS backend
   hard-crashed under `.half()` and errored under `autocast` on this model —
   MLX doesn't hit that wall). If natural prosody matters and you're
-  Mac-only, this beats plain PyTorch-Kokoro on every axis tested.
+  Mac-only, this beats plain PyTorch-Kokoro on latency and stability — but
+  **not on memory**, where it is now measured ~0.7GB *heavier* (Bug #11).
 - **macOS `say` (native)** is zero-install and cheapest on RAM for a short
   phrase, but its RTF degrades on longer text (second-worst of six at 231
   chars) — pick it for short, one-off utterances (notifications, prompts),
@@ -149,17 +162,17 @@ Based on the 231-char ranking (the more representative comparison):
 5. **`macos-say`'s RAM reading measured the wrong process** — `run_say.py`
    originally sampled `psutil.Process()` (the Python wrapper), but `say`
    dispatches synthesis to `SpeechSynthesisServerXPC`, a separate long-lived
-   system daemon — so the reading was near-meaningless. `metrics.measure()`
-   now takes an optional `pid` argument; `run_say.py` looks up the daemon's
-   pid and samples that instead. `results.csv`'s `macos-say` row before this
-   fix (`ram_peak_mb` ~187) isn't comparable to the row after it. That pid
-   lookup originally ran *before* anything guaranteed the daemon was alive —
-   on a fresh login with no prior `say` call, it would silently return
-   `None` and `measure()` would fall back to sampling the wrapper again
-   (reintroducing this exact bug with no signal that it happened). Fixed:
-   `run_say.py` now runs a throwaway `say` call first to guarantee the
-   daemon is up, and raises instead of silently falling back if it's still
-   not found.
+   system daemon — so the reading was near-meaningless. `results.csv`'s
+   `macos-say` row before this fix (`ram_peak_mb` ~187) isn't comparable to
+   later rows.
+   *Correction (2026-08-13):* this entry used to describe the fix as a `pid`
+   argument on `measure()` that samples the daemon instead. That approach was
+   tried and **dropped** — see the comment in `run_say.py:27-31`: the service
+   idles out and `say -o file` doesn't dependably spawn it, so the lookup
+   often found nothing, and even when it worked the number was an RSS delta on
+   a warm shared daemon, not a footprint. `measure()` has no `pid` parameter.
+   The actual fix is `track_process=False`, which reports CPU and RAM as blank
+   (`n/a`) for this backend rather than as a wrong number.
 6. **CPU% columns measured the whole system, not the process** —
    `metrics.py` called `psutil.cpu_percent(interval=0.1)` (module-level),
    which is system-wide CPU utilization, not `process.cpu_percent()`. This
@@ -185,6 +198,47 @@ Based on the 231-char ranking (the more representative comparison):
    every `git add` indefinitely. Fixed by passing `lineterminator="\n"`
    explicitly to `csv.DictWriter`; existing file content was normalized to
    LF in place to match.
+9. **`ram_peak_mb` was never a peak** — `measure()` read RSS once *after* the
+   call returned, so every "peak" in this log is a post-hoc snapshot.
+   `metrics.py` now polls RSS, swap, free system RAM and per-interval CPU% on a
+   50ms sampler thread for the duration of the call, and adds a `cpu_peak_pct`
+   column. Immediate payoff: Piper's average CPU is 335% but its **peak is
+   405%** — the averages were hiding how many cores it actually pins.
+10. **"Negative RAM spikes are a GC artifact" was the wrong explanation** —
+    the note above blamed the baseline sample landing after a GC/model-load
+    memory drop. Two real causes, found while fixing the same symptom in
+    `../stt_models`: (a) on this 8GB machine under sustained memory pressure
+    the OS **evicts pages during synthesis**, so RSS genuinely falls below
+    baseline; and (b) MLX allocates weights at **load** time, outside the
+    measured window, so the inference window was never going to contain the
+    allocation. A snapshot-minus-snapshot across the wrong window can only
+    produce noise. Fixed by #9 (a polled peak cannot go below its baseline).
+11. **MLX memory was reported as `n/a` when MLX exposes its own counters** —
+    bug #7 correctly stopped writing a false `0` for backends torch can't see,
+    but stopped there. `mx.get_peak_memory()` / `mx.reset_peak_memory()` report
+    MLX's own allocator high-water mark. `metrics.py` now logs `mlx_peak_mb`,
+    so MLX-Kokoro's footprint is a number instead of a blank: **~1.46-1.50 GB**
+    during synthesis of the 88-char sentence. Note this is *larger* than
+    PyTorch-Kokoro's 583-819MB `gpu_mem_mb`, so the earlier suggestion that
+    MLX "doesn't carry Kokoro's 700+ MB GPU footprint the same way" was
+    reading a measurement gap as an advantage. The two counters still aren't
+    strictly comparable (unified memory vs a torch MPS allocation), but MLX is
+    clearly not cheaper on memory — its win is latency.
+12. **`run_kokoro_mlx.py` never freed a variant before loading the next** — all
+    three ran in one process, so each variant's `mlx_peak_mb` included the
+    previous ones' resident weights. Observed as a monotonic climb of
+    1501 → 1774 → 2054 MB, which reads as "4bit uses the most memory" when the
+    truth is the opposite of an ordering — it was just last. Fixed with
+    `del model` / `gc.collect()` / `mx.clear_cache()` per iteration; the
+    numbers then flatten to **1501 / 1461 / 1465 MB**, i.e. **quantization
+    buys no runtime memory either**, matching the existing finding that it buys
+    no latency. That run also showed the unfreed version pushing the machine
+    into swap (`swap_delta_mb` 367, free RAM down to 612MB) where the freed
+    version stays at zero swap.
+
+Bugs #9-#12 were found in `../stt_models` first (see
+`../stt_models/docs/RESULTS.md`, where the same measurement bugs invalidated
+two of three headline findings) and back-ported here on 2026-08-13.
 
 Additionally checked: Apple's Foundation Models framework (macOS 26+,
 on-device LLM — text generation/tool-calling, not TTS) compiles and runs
