@@ -1,0 +1,5 @@
+# Dictation captures are recordings of your own voice plus their transcripts — local
+# eval data, not something to push to a remote.
+captures/
+captures.jsonl
+__pycache__/

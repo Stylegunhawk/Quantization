@@ -1,0 +1,36 @@
+#!/bin/sh
+# Launcher stub: the bundle is just Info.plist + this script, so there is no build step and
+# no frozen copy of the code to keep in sync. Edit dictate_app.py and relaunch.
+# Same shape as ../../../../tts_models/Kokoro Speak.app — including the two comments below,
+# which are both scars.
+
+# Launched from Spotlight or Finder there is no terminal, so without this any startup
+# failure — a missing venv, a macOS privacy denial, a model that won't load — is completely
+# silent. This log is the only place you can see why the menu bar icon never appeared.
+[ -t 1 ] || exec >> /tmp/dictate.log 2>&1
+
+# cd -P first: without it, launching through a symlink (e.g. an alias in /Applications)
+# resolves the repo relative to the symlink's folder instead of the real bundle.
+HERE="$(cd "$(cd -P "$(dirname "$0")" && pwd)/../../.." && pwd)"
+
+# Tell the app it is running as the bundle. Launched this way, macOS attributes the
+# Accessibility and Microphone grants to Dictate.app, not to the venv's python — so the
+# startup log has to name the bundle, or you spend the afternoon granting the wrong thing.
+DICTATE_BUNDLE="$(cd "$(cd -P "$(dirname "$0")" && pwd)/../.." && pwd)"
+export DICTATE_BUNDLE
+
+# A child, deliberately not exec. exec would make python *this* process, which Spotlight has
+# already registered with LaunchServices as Dictate.app — but python's own NSBundle is
+# Python.app, and a process whose registration and bundle disagree is given no menu bar slot
+# at all: the status item exists, reports a zero-height window, and is invisible forever.
+# As a child it is unregistered and claims its own slot, exactly like running dictate_app.py
+# from a terminal, which never had the bug. This only ever broke via Spotlight/Finder, so it
+# is invisible in testing unless you launch it the way you actually use it.
+"$HERE/.venv/bin/python" -u "$HERE/dictate_app.py" &
+child=$!
+# Nothing forwards signals to a child, so without this, quitting leaves the model resident
+# with no way to reach it — 600MB on an 8GB machine.
+trap 'kill "$child" 2>/dev/null' TERM INT
+# Exit with the child's status, so "already running" (a clean 0 from the flock guard) stays
+# distinguishable from a crash.
+wait "$child"

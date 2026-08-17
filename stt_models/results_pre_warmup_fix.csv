@@ -1,0 +1,4 @@
+timestamp,model,device,text_chars,rtf,latency_s,cpu_pct,ram_baseline_mb,ram_peak_mb,ram_spike_mb,gpu_mem_mb
+2026-08-12 17:46:15,whisper-small-mlx,mps,201,0.6072,4.4032,30.9,202.62,120.45,-82.17,
+2026-08-12 17:46:50,Qwen3-ASR-0.6B-4bit,mps,108,0.2725,1.9764,21.6,372.62,215.84,-156.78,
+2026-08-12 17:47:36,Qwen3-ASR-1.7B-4bit,mps,109,0.2002,1.4517,57.7,394.75,142.62,-252.12,
