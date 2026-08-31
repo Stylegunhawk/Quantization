@@ -341,10 +341,59 @@ measurement mistake:
     the app's own ⌘V visible in the same trace as `keyCode=9 flags=0x100000
     hit=False` — passed through, which is also proof the focus handoff completed.
 
+## Vocabulary biasing: measured, and only partly effective
+
+Qwen3-ASR takes a `system_prompt`, and `mlx_audio`'s `generate_transcription`
+forwards it (filtering kwargs against the model's `generate` signature, so it
+is silently dropped for models like Whisper that have no such parameter).
+Feeding it a list of proper nouns is genuine context biasing, not a prompt
+trick, and it costs ~0.03s on a 15–21s clip.
+
+Two of this app's own captures happened to contain the failure, which makes
+this the first accuracy claim in this document with real ground truth — the
+words are ones I know were said:
+
+| clip | no biasing | biasing | after the text pass |
+|---|---|---|---|
+| 111735 | "streaming **Nimoton** model" | "streaming **NemoTone**" | **Nemotron** ✓ |
+| 111735 | "already done **QN** three years" | "**QN**" / "**Qwen**" ⁽¹⁾ | **Qwen3** ✓ |
+| 111314 | "such as **NemoTone** Live Translate" | **Nemotron** ✓ | Nemotron ✓ |
+
+⁽¹⁾ The bare comma-separated list left "QN" alone; wrapping it in a sentence
+("Vocabulary that appears in this audio: …") fixed that word **and broke
+ordinary ones** — "What other features or what other models should I test
+next" became "What other features are other models should test next". That is
+the whole reason biasing is not trusted on its own: the prompt wording
+changes words nobody asked it to change. The app sends the bare list.
+
+So the app applies three layers (`apply_vocab`), and the two deterministic
+ones are what actually close the gap:
+
+- **Explicit aliases** — the only mechanism that can fix a mangling which is
+  itself an English word. `gwen` for Qwen3 is the case: fuzzy matching scores
+  it 0.67, and the dictionary guard below protects it regardless, because
+  "Gwen" is in `/usr/share/dict/words`.
+- **Fuzzy match, cutoff 0.75, skipping dictionary words.** Chosen from
+  measured ratios, not guessed: real errors land at 0.77–0.94
+  (`sudesh`→Siddesh 0.77, `nimoton`→Nemotron 0.80, `nemotone`→0.88,
+  `parakeets`→Parakeet 0.94) and the words that must not be rewritten land at
+  0.67 (`when`→Qwen3, `mix`→MLX, `voltron`→Nemotron). A 0.10 margin is thin,
+  which is why the dictionary guard exists as well — `when`, `mix`, `item`
+  and `solid` are all in `web2`, so they are never candidates.
+
+End to end through `--file`, both captures now come out with all three names
+right. `--check` asserts every pair above, including the must-not-change ones.
+
+⚠️ The dictionary guard cuts both ways: any mangling that happens to be a real
+word is invisible to the fuzzy pass forever, and needs an alias. That is the
+deliberate trade — a false rewrite of "when" into "Qwen3" in the middle of a
+sentence is much worse than a missed fix.
+
 ## Next steps
 
 - Write down the clip's actual sentence and compute real WER — the only
-  remaining unmeasured axis (see the accuracy warning above).
+  remaining unmeasured axis (see the accuracy warning above). `captures.jsonl`
+  is now the better corpus for this than the single benchmark clip.
 - Add Parakeet-tdt-0.6b-v3 (mlx-community) for a third comparison point;
   `README.md` already claims it is tested and it is not.
 - ~~Consider back-porting fixes #1–#4 to `tts_models/metrics.py`.~~
@@ -358,6 +407,249 @@ measurement mistake:
 - Test on a longer clip. `tts_models` found that ranking changed between an
   88-char and a 231-char input; 7.25s of audio may be short enough that
   per-call fixed overhead still dominates.
+- ~~Streaming.~~ **Done 2026-08-17** — see "Streaming: Nemotron" below.
+  `mlx-community/parakeet-tdt-0.6b-v3` (2.5GB) is still untested, and
+  `Voxtral-Mini-4B-Realtime-2602-4bit` (3.1GB) stays deferred: its weights
+  alone exceed the 1.7B Qwen's entire 2314MB peak.
+- `metrics.py` still cannot evaluate a streaming model — it times one blocking
+  call, so it has no column for time-to-first-token. The numbers below were
+  measured by `dictate_app.py --live-file`, not by the benchmark harness.
+
+## Streaming: Nemotron-3.5-ASR-streaming-0.6B (8-bit)
+
+`mlx-community/nemotron-3.5-asr-streaming-0.6b-8bit`, 756MB on disk. A
+cache-aware streaming FastConformer-**RNN-T** with language-ID conditioning.
+This is now live mode in `dictate_app.py`, selected from the menu bar's Model
+submenu.
+
+### It is cheaper than the model it replaces
+
+| configuration | MLX peak |
+|---|---|
+| Nemotron 8-bit, load | 797MB |
+| Nemotron 8-bit, streaming inference | **970MB** |
+| Qwen3-ASR-0.6B-4bit, inference (for comparison) | 1311MB |
+| **both models resident**, Qwen inference | **2425MB** |
+
+The last row is the one that decided the design. 2425MB is worse than the 1.7B
+Qwen alone, which already left this machine under 1GB free — so the app holds
+**one model at a time** and live mode *replaces* Qwen3 rather than joining it,
+which makes it the *lighter* configuration. A second hotkey holding both models
+was the obvious design and the measurement ruled it out.
+
+Swapping was then measured rather than assumed, since a naive switch would load
+the new model while the old one is still alive — the 2425MB case exactly. With
+the old model dropped first (`del`, `gc.collect()`, `mx.clear_cache()`), MLX's
+peak resets to **0MB** in 0.10s, so each swap peaks at one model's cost:
+
+| model | mode | peak, loaded and warmed | after free |
+|---|---|---|---|
+| Qwen3-ASR 0.6B | batch | 1375MB | 0MB |
+| Qwen3-ASR 1.7B | batch | 2426MB | 0MB |
+| Nemotron 0.6B | live | **942MB** | 0MB |
+
+Swaps take 1.5–2.5s including the warm-up. `--models --swap` reproduces the
+table; the 1.7B is the tightest configuration the app can be put into, and the
+streaming model is the cheapest.
+
+### Less look-ahead is slower, not faster
+
+The model ships four trained `att_context_size` settings. Sweeping them
+offline on two clips (compute only — the audio is already on disk):
+
+| `att_context_size` | look-ahead | chunk audio | TTFT | RTF | updates (21s clip) |
+|---|---|---|---|---|---|
+| `[56, 0]` | 0ms | 0.08s | 0.86s | **0.682** | 83 |
+| `[56, 3]` | 240ms | 0.32s | 0.19s | 0.217 | 46 |
+| `[56, 6]` | 480ms | 0.56s | 0.17s | 0.149 | 26 |
+| `[56, 13]` | 1040ms | 1.12s | 0.12s | 0.104 | 16 |
+
+Zero look-ahead is **6.6× more expensive** than the default and has the
+*worst* TTFT. One-frame chunks pay the per-chunk overhead 14× as often, and
+that dominates the latency it was supposed to save. Anyone tuning this by
+intuition would pick `[56, 0]` and make the app slower.
+
+Live latency is a different quantity from this table: it is
+`chunk audio + compute`, because the future audio has to happen before it can
+be encoded. So `[56, 13]` trails your voice by ~1.1s and `[56, 3]` by ~0.32s.
+
+**`[56, 3]` was the app's setting on that reasoning, and it was wrong** — see
+"Look-ahead is not a latency/accuracy trade" below. The app now uses the
+model's default `[56, 13]`.
+
+### Look-ahead is not a latency/accuracy trade — smaller is just worse
+
+Choosing `[56, 3]` for responsiveness assumed the usual trade: less future
+context, faster feedback, slightly worse text. Measured against each clip's own
+non-streaming `generate()` output as the reference, on six clips:
+
+| `att_context_size` | matches the reference | RTF |
+|---|---|---|
+| `[56, 3]` | **1 of 6** | 0.20 |
+| `[56, 6]` | 2 of 6 | 0.15 |
+| **`[56, 13]`** (model default) | **6 of 6** | **0.10** |
+
+The losses are content words, not punctuation: `[56, 3]` dropped "okay" and
+"like" outright, and wrote "**nemoton**" where `[56, 13]` writes "Nemotron" —
+a mangling the vocabulary layer then has to undo, caused entirely by the
+setting. `[56, 6]` dropped "a better" and downgraded "Nemotron Live Transcribe"
+to "live transcribe".
+
+So the low-latency settings are worse on accuracy *and* cost twice the compute.
+The only thing `[56, 13]` gives up is how far the on-screen text trails while
+you are still speaking (~1.1s vs ~0.3s), which for dictation is the cheap axis:
+the words land either way, and a dropped word has to be fixed by hand.
+
+Two lessons, both mine: the intuition that a smaller chunk must be more
+responsive ignored that per-chunk overhead dominates at these sizes, and the
+first sweep printed only `text[:110]`, which hid exactly the tail differences
+that mattered.
+
+### Measured through the app's own live path
+
+`--live-file`, mic and keystrokes excluded, on two real captures:
+
+| clip | audio | first text | updates | revisions | RTF |
+|---|---|---|---|---|---|
+| 111314 | 21.1s | 0.43s | 46 | **0** | 0.213 |
+| 111735 | 15.0s | 0.51s | 34 | **1** | 0.215 |
+
+**RNN-T output is almost purely append-only** — 1 revision in 80 updates. The
+`diff_update` backspace path is therefore rarely taken, but it is not
+theoretical: it fired once, and without it that update would have appended a
+duplicate instead of correcting the text.
+
+### Accuracy against Qwen3, on clips with known ground truth
+
+| said | Qwen3-ASR-0.6B | Nemotron 8-bit |
+|---|---|---|
+| "Nemotron" | "NemoTone" / "Nimoton" ✗ | **"Nemotron"** ✓ |
+| "Live Transcribe" | "Live Translate" ✗ | **"Live Transcribe"** ✓ |
+| "Qwen3 ASR" | "QN three years ago" ✗ | "Queen three ASR" ✗ |
+| "should I test next" | "should I test next" ✓ | "should attest next" ✗ |
+
+Nemotron gets its own name right unprompted, which Qwen3 never does. Neither
+gets "Qwen3", and Nemotron's "**Queen** three" is worse than it looks for the
+vocabulary layer: "queen" is a real dictionary word, so the fuzzy pass is
+barred from touching it, and the fix would need a *two-word* alias, which
+`apply_vocab` does not support. That is the clearest case yet for n-gram
+aliases.
+
+⚠️ Punctuation and casing differ between the two engines, and no WER is
+computed here either — this is still four hand-checked words, not a metric.
+
+### Two bugs the first real live session exposed
+
+Both were invisible to every test written before it, and both were found by
+reading the app's own log rather than by running anything.
+
+**14. The startup model was never freed, so a swap cost both models.** The log
+line `Nemotron 0.6B — live (live, peak 1656MB)` was the tell: standalone
+Nemotron peaks at 942MB, and the missing 714MB is Qwen3's weights. Cause was
+not the swap logic, which correctly dropped the session's reference — it was
+`main()` keeping the first model in a local variable. That frame lives for as
+long as `runEventLoop()` runs, so the name kept the weights alive no matter
+what the Engine did. One `del model` after handing it to the session fixes it;
+measured after: 942MB, **0MB overhead vs standalone**, in both directions.
+
+This is the failure the one-model-at-a-time design exists to prevent, and it
+shipped anyway, because every memory measurement until then had been taken in
+a script that *returned* rather than in a process that stays running.
+
+**15. `cancel()` on an idle live session started recording.** It was written
+as a bare `self.toggle()`, which is correct when a session is running and
+exactly backwards when it is not. `Engine.switch` calls cancel before
+swapping, so switching *to* Nemotron and then back silently opened a
+microphone stream, and that worker thread held the model — leaking 799MB on
+the way back and, worse, recording without the icon saying so. Fixed by
+returning early when idle, and by giving both session types a `close()` that
+also **joins the worker**: the generator inside it owns a reference to the
+model being replaced, so the swap has to wait for it to exit.
+
+### Live sessions are now in the corpus
+
+Live mode originally wrote nothing to `captures/` — a deliberate simplification
+that turned out to be wrong the first time the transcripts needed reviewing,
+since the only copy of the text was in whatever field it had been typed into.
+Live rows are now saved like batch rows (clips prefixed `live-`, rows carrying
+`mode: "live"`), which also makes the two engines directly comparable on
+identical audio.
+
+One column does not transfer: a live row's `latency_s` is the wait *after* you
+stop, because the rest of the work happened while you were still speaking. Do
+not read it as a batch RTF.
+
+### Correction: "matches the offline reference" is fidelity, not accuracy
+
+The look-ahead table above compares each streaming setting against the same
+model's non-streaming `generate()` output. That measures whether streaming is
+faithful to the model's own offline decode — it does **not** measure whether
+either is right, and I presented it as though it did.
+
+A later clip shows the difference plainly. `[56, 13]` reproduces `generate()`
+exactly, as the rule predicts, and both produce *worse* text than the
+low-latency setting did:
+
+| pass | text |
+|---|---|
+| `[56, 3]` | "Is the **ordinary** like **male spectrogram** audio encoder…" |
+| `[56, 13]` and `generate()` | "Is the **Oden Goder** like **Malspectrogram** audio encoder…" |
+
+"Oden Goder" is nonsense; "ordinary" is at least a word. So on this clip the
+setting that loses words elsewhere is the one that read the sentence better.
+With no written ground truth there is no way to score this, which is the same
+gap this document has flagged from the start — and it is now blocking a real
+decision (which `LIVE_ACS` to ship) rather than an academic one.
+
+**Resolved, and it reverses the choice.** Asked which reading matched the
+sentence, the speaker confirmed **"ordinary"** — so on the only comparison in
+this document with ground truth, the low-latency setting read the sentence
+correctly and the model's own offline decode did not. The other difference on
+that clip ("male spectrogram" vs "Malspectrogram") the vocabulary now resolves
+to the same term either way, which leaves that one word as the discriminator.
+
+The app therefore ships `[56, 3]`, accepting worse fidelity, twice the compute
+(RTF 0.20, still ~5× headroom) and the risk of a dropped trailing word, in
+exchange for the one thing that was actually verified plus 0.32s of lag instead
+of 1.12s.
+
+Worth stating how thin that is: **one word, on one clip.** The six-clip table
+is a stronger *measurement* and a weaker *argument*, because it scores the wrong
+thing. Neither settles the question. What would: transcribing a clip whose
+sentence was written down before it was spoken — the corpus this document has
+wanted from the beginning, now blocking a shipped default rather than a
+footnote.
+
+### The vocabulary's real gap was multi-word, and the words are ordinary
+
+Three mishearings resisted every layer: "Webb item" (verbatim), "Queen three"
+(Qwen3), "male spectrogram" (mel spectrogram). They share a structure worth
+naming — each is **built from words that are already English**, so:
+
+- the fuzzy pass is barred from touching them by the dictionary guard, which is
+  working exactly as intended ("male", "queen", "item" must never be rewritten);
+- a per-word alias cannot see across the space.
+
+Phrase aliases close it: `Mel spectrogram: male spectrogram`. Fuzzy now also
+matches against aliases, because the variants multiply — the same sentence gave
+"male spectrogram" at `[56, 3]` and "Malspectrogram" at `[56, 13]`, and
+`malspectrogram`→`melspectrogram` scores 0.93, so one listed spelling covers
+its neighbours.
+
+Re-swept the whole corpus after the change: **5 rewrites across 251 distinct
+words, every one correct, no false positives.** The guard still holds — "a male
+voice" and "the spectrogram" are untouched, and only the full two-word phrase
+fires.
+
+### One private API is load-bearing
+
+The live path is assembled from `StreamingLogMelSpectrogram` (incremental
+centered mel, bounded memory), `ConformerStreamingState` (per-layer attention
+and conv caches), and `model._decode_prompted_chunks(...)` — which is
+**private**. The public `stream_generate()` only accepts an array that already
+exists, which a live microphone by definition does not, so there is no
+supported way to do this today. If a `mlx_audio` upgrade renames that method,
+live mode breaks and batch mode does not.
 
 ## Corrections to the previous version of this document
 

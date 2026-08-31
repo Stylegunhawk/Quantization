@@ -3,3 +3,10 @@
 captures/
 captures.jsonl
 __pycache__/
+
+# Per-machine state, not repo defaults: which model you last picked, and your own
+# pronunciation list. vocab.example.txt is the tracked starting point for both.
+model.txt
+vocab.txt
+model.txt.tmp
+vocab.txt.tmp

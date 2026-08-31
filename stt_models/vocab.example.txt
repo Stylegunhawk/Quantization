@@ -1,0 +1,21 @@
+# Copy to vocab.txt (or just open menu bar → Vocabulary…, which creates it) and edit.
+# Your vocab.txt is gitignored: pronunciations are personal, this list is only a starting point.
+#
+# One term per line. After a colon, list manglings you have ACTUALLY SEEN in a transcript —
+# those are replaced exactly, and are the only way to fix two cases fuzzy matching cannot:
+#   - a mangling that is itself a real English word     ("gwen" for Qwen3)
+#   - one split across two words                        ("male spectrogram")
+# Everything else is caught by fuzzy matching against the bare terms, which refuses to touch
+# any word already in /usr/share/dict/words. Names are the common case:
+#
+#   
+#
+Qwen3: gwen, qn, quen, queen three
+Nemotron: nimoton, nemotone, nemo tone
+Parakeet: perakit
+Mel spectrogram: male spectrogram, mail spectrogram, melspectrogram, mel spectogram
+verbatim: webb item, verb item
+Voxtral
+Kokoro
+MLX
+Whisper
