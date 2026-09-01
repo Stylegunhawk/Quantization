@@ -4,12 +4,20 @@ Local sandbox to compare Kokoro-82M, Piper, Inflect-Micro-v2, Kokoro-MLX and
 macOS `say` on latency, CPU/RAM/GPU spike — plus a read-aloud app built on the
 model that won.
 
-Two separate things live here:
+Three separate things live here:
 
 - **The benchmark** — `run_*.py` synthesise the same text with each engine and
   append a row to `results.csv`. Conclusions: `docs/findings.md`.
 - **The app** — `speak_app.py`, a hotkey that reads your selection aloud with
   the model held resident. Design and root-cause notes: `docs/streaming.md`.
+- **`voice_clone/`** — an *experiment*, not a utility: cloning my own voice with
+  Qwen3-TTS. Zero-shot reaches 55% on a calibrated timbre scale; fine-tuning on
+  1.7 minutes of audio scored 9.5%, below a generic voice. Self-contained —
+  nothing outside it depends on it. Write-up: `voice_clone/README.md`.
+
+Read `CLAUDE.md` before rearranging files: the app resolves `speak_app.py` and
+`.venv` by path relative to the `.app` bundle, so those three must stay siblings
+at the root.
 
 ## Setup (Mac or Windows, using `uv`)
 

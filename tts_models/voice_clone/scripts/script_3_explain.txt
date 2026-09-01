@@ -1,0 +1,179 @@
+# SCRIPT 3 of 3 — Explaining, narrating, reacting
+# Target: ~15 minutes. Same room, same mic, same distance as scripts 1 and 2.
+#
+# This one covers what the other two miss: explaining something step by step,
+# telling a short story with a beginning and an end, reading numbers and dates
+# out loud, and a few passages with genuine emotional colour. Those intonation
+# patterns are the hardest for a model to invent, so they have to be in the data.
+#
+# Read the numbers naturally, the way you would say them, not digit by digit.
+
+1. Let me try to explain how this actually works, because I had to have it explained to me twice.
+
+2. You start with a recording. The model breaks the sound into small pieces, about twelve of them per second.
+
+3. Each piece becomes a number, and the whole recording becomes a long list of numbers.
+
+4. Then the model learns to predict the next number from the ones before it, which is the same trick language models use for words.
+
+5. When you want new speech, you give it some text, and it produces a new list of numbers, and something else turns those back into sound.
+
+6. That last part is the piece people forget. Predicting the numbers is only half of it.
+
+7. The reason it needs so many examples is that it has to learn how your voice behaves in situations it has never heard.
+
+8. If you only ever record yourself saying calm sentences, it will not know what you sound like asking a question.
+
+9. That is why these scripts have questions in them. Have you noticed how many? There have been four so far.
+
+10. Emphasis is another one. When I say I did not say that, it means something different from when I say I did not say that.
+
+11. Same eight words, completely different meaning, and the only difference is which one I lean on.
+
+12. A model that has never heard you emphasise anything will produce speech that is technically correct and sounds dead.
+
+13. Here is a story. About three years ago I lost a week of work because of a single character.
+
+14. I had written a script that cleaned up a folder of temporary files. It worked perfectly for about two months.
+
+15. Then one day the variable holding the folder name was empty, and the script cheerfully deleted everything from the root instead.
+
+16. I watched it happen. There is a particular feeling when you realise what a progress bar is actually measuring.
+
+17. I had backups, which is the only reason this is a funny story instead of a career-ending one.
+
+18. The restore took about six hours and I did not sleep much that night.
+
+19. The fix was one line. Check that the variable is not empty before you use it.
+
+20. I now check that variable in every script I write, and I will do it for the rest of my life.
+
+21. That is the thing about painful lessons. They are extremely effective and nobody would choose to learn that way.
+
+22. Here is a smaller one. Last year I spent an entire afternoon convinced a function was broken.
+
+23. I added print statements everywhere. I read the documentation twice. I asked two people.
+
+24. It turned out I was editing one file and running a different one, in a folder I had copied a week earlier.
+
+25. Four hours. For a wrong path. I did not tell anyone for about a month.
+
+26. Now let me read some numbers, because a model needs to hear these too.
+
+27. The meeting is on the fourteenth of March, at half past nine, in room two hundred and six.
+
+28. It costs one thousand, two hundred and fifty rupees, plus about eighteen percent tax.
+
+29. My phone number ends in four, seven, seven, two. The order number was A B nine one four.
+
+30. It was minus three degrees on Tuesday and twenty-six degrees by Friday, which is a forty-degree swing in four days.
+
+31. The file was two hundred and forty megabytes, which took roughly ninety seconds to upload.
+
+32. That is nineteen ninety-five, two thousand and eight, twenty nineteen, and twenty twenty-six.
+
+33. Three quarters of the team said yes, about a fifth said no, and the rest did not reply at all.
+
+34. Now something with a bit more feeling in it, because flat delivery for fifteen minutes teaches the model to be flat.
+
+35. Honestly, that is the best news I have heard all week. I was not expecting it at all.
+
+36. No, wait. Say that again? You are joking. That cannot be right.
+
+37. I am really sorry. I should have told you earlier and I did not, and that was my fault.
+
+38. It is fine. Genuinely, it is fine. These things happen and nobody is upset with you.
+
+39. That is completely ridiculous. I have never heard anything so ridiculous in my life.
+
+40. Oh, that is beautiful. Look at the light on the water. I did not expect it to be like this.
+
+41. I am so tired. I do not think I have ever been this tired.
+
+42. Right, let us just get it done. One more hour and then we stop, whatever state it is in.
+
+43. Back to explaining, because that is most of what I actually do with my voice.
+
+44. The way I would describe it to someone with no background is this. Imagine teaching someone to imitate you.
+
+45. First you play them a short clip. They will get the general shape of it, roughly half right.
+
+46. That is what we tried first, and half right is genuinely what it sounded like.
+
+47. Then imagine instead that they spend an hour listening to you talk about all sorts of things.
+
+48. They start to pick up the small things. Where you pause. How you end a question. Which sounds you shorten.
+
+49. That is what this recording is for. Not one clip, but enough material for the pattern to show up.
+
+50. There is a threshold somewhere. Below it, the model memorises the exact sentences and produces noise on anything new.
+
+51. Above it, it starts to generalise, and that is when it becomes a voice instead of a recording.
+
+52. We were well below that threshold on the first attempt, which is why the result was worse than a generic voice.
+
+53. That was not a failure of the method. It was a failure to feed it enough, and those are different problems.
+
+54. Something I find genuinely interesting is that the model does not store your voice as a sound.
+
+55. It stores it as a set of tendencies. How long you hold a vowel, how much your pitch moves, what you do at the end of a sentence.
+
+56. Which means it can say things you have never said, in a voice that is recognisably yours, without ever having heard those words from you.
+
+57. That is either impressive or unsettling depending on the day you have had.
+
+58. There is an obvious question about consent that sits underneath all of this.
+
+59. Recording your own voice for your own model is straightforward. Everything past that gets complicated quickly.
+
+60. I think the honest position is that the technology is ahead of the norms, and it will stay ahead for a while.
+
+61. Let me describe the room I am in, because descriptive speech has a different rhythm from explaining.
+
+62. There is a window on the left, a desk against the wall, and a lamp that I have never once moved.
+
+63. The chair is slightly too low and I keep meaning to adjust it and I never do.
+
+64. There are three cables on the floor that go somewhere, and I could not tell you where.
+
+65. Outside there is a road, and beyond that a building with a red sign that is lit at night.
+
+66. I have looked at that sign for four years and I have never read what it says.
+
+67. There is something about the things you see every day. You stop actually seeing them.
+
+68. I noticed a crack in the ceiling last month that has probably been there since before I moved in.
+
+69. Now some longer sentences, because sentence length affects how the model learns to breathe.
+
+70. When I first started working on this, I assumed the difficult part would be the modelling, but it turned out that almost every problem was about data, or memory, or the gap between what a script claimed to do and what it actually did.
+
+71. The measurement is more important than the change, because a change you cannot measure is just an opinion with extra steps, and I have shipped enough opinions to know how that ends.
+
+72. If you had asked me a month ago how much audio a system like this needs, I would have guessed about two minutes, and I would have been wrong by a factor of somewhere between ten and twenty.
+
+73. And now some short ones. Like this. Just a few words.
+
+74. Yes. Exactly. That is the one.
+
+75. Not quite. Try again.
+
+76. Okay. Good. Next.
+
+77. Short sentences and long ones use completely different breathing, and a model trained only on one will get the other wrong.
+
+78. Here is the last section. A few things I have changed my mind about.
+
+79. I used to think documentation was for other people. It is mostly for you, six months later, and you will not remember.
+
+80. I used to think the clever solution was the good one. Now I think the boring one is, almost always.
+
+81. I used to think that being fast mattered most. It turns out that being correct and being clear matter more, and speed follows from both.
+
+82. I used to think you should finish everything you start. I now abandon things much earlier and I am happier for it.
+
+83. And I used to think that the hard part of learning something was the concepts. It is not. It is the repetition.
+
+84. That is the end of the third script. If you have recorded all three, that should be somewhere around forty minutes of material.
+
+85. Which is roughly twenty times what we had the first time, and that is the whole point of the exercise.

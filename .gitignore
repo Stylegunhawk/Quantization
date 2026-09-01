@@ -7,3 +7,20 @@
 .audit/
 reference/
 __pycache__/
+
+# voice_clone holds my own voice. Recordings and anything derived from them stay
+# local; scripts/*.txt, analysis/*.py and the notebooks are tracked.
+tts_models/voice_clone/recordings/
+tts_models/voice_clone/dataset/
+tts_models/voice_clone/**/*.wav
+tts_models/voice_clone/**/*.m4a
+tts_models/voice_clone/**/*.mp3
+tts_models/voice_clone/**/*.flac
+
+# My own voice. Were tracked and public until the Sep 2026 history rewrite --
+# keep them ignored so a `git add -A` cannot re-leak them.
+sample_for_tts.m4a
+stt_models/sample_for_tts.wav
+
+# Raw Colab session log from the fine-tuning runs — contains the speaker name.
+colab_browser_output.txt

@@ -1,0 +1,178 @@
+# SCRIPT 2 of 3 — Everyday life, opinions, description
+# Target: ~15 minutes. Same room, same mic, same distance as script 1.
+# Read it like you are talking to a friend, not reading aloud. Slight
+# imperfection is fine and actually helps — the model learns your natural
+# rhythm, not a newsreader's.
+#
+# This script deliberately covers different ground from script 1: shorter
+# sentences, more questions, numbers, place names, and a wider emotional range.
+
+1. It rained all morning and then cleared up around two, which is exactly the opposite of what the forecast said.
+
+2. I have stopped checking the weather app. It is wrong often enough that I may as well look out of the window.
+
+3. Coffee first, then anything else. That is not a preference, that is a requirement.
+
+4. I make it the same way every day. Same amount, same water, same mug, and I would notice immediately if any of that changed.
+
+5. There is a small place near the office that does a good filter coffee for about forty rupees.
+
+6. It takes maybe seven minutes to walk there, which is long enough to think about something and short enough not to feel like a trip.
+
+7. I ordered the same thing for about three months before I tried anything else on the menu.
+
+8. That is a habit I have in restaurants too. Once something works, I stop exploring.
+
+9. My friend finds this unbearable. He orders something different every single time, and about half of it is a mistake.
+
+10. He would say that half is the point. I am not convinced, but I admire the commitment.
+
+11. We went out for dinner on Saturday and the place was completely full, so we ended up somewhere neither of us had heard of.
+
+12. It was better than the original plan, which is annoying because it means he was right.
+
+13. The food came out too fast, though. I never trust it when the food arrives in four minutes.
+
+14. Cooking at home is mostly about planning. If the shopping is right, the cooking is easy.
+
+15. If the shopping is wrong, you spend an hour improvising and it never quite works.
+
+16. I have been trying to cook more this year. Not for any dramatic reason, just because I like knowing what is in it.
+
+17. Rice, dal, something green, and whatever vegetable looked good. That covers most weeknights.
+
+18. Sunday is different. Sunday I will spend two hours on something that takes twenty minutes to eat.
+
+19. Is that a good use of a Sunday? Probably not. Do I enjoy it? Enormously.
+
+20. Sleep is the thing I get wrong most consistently. I know exactly what I should do and I do not do it.
+
+21. No screen for an hour before bed. Same time every night. Everyone knows the list.
+
+22. Knowing the list and following the list are apparently unrelated skills.
+
+23. I sleep better when I have exercised, which you would think would be motivating.
+
+24. I walk about five kilometres most days, usually in the evening, usually while listening to something.
+
+25. Podcasts, mostly. Occasionally music, but I find I stop paying attention to music and just keep walking.
+
+26. There is a route near my place that loops past a park and a school and back around. It takes about fifty minutes.
+
+27. In December it is dark by six, so the whole walk happens under streetlights, and it feels completely different.
+
+28. Winter here is not really winter. It is just a few weeks where you need a jacket in the morning.
+
+29. I grew up somewhere that got properly cold, and I do not miss it at all.
+
+30. Although there is something about cold weather that makes a hot drink genuinely satisfying rather than just pleasant.
+
+31. Travel is the thing I keep meaning to do more of and keep not doing.
+
+32. I have a list of about eight places. I have been to two of them.
+
+33. The problem is that a good trip needs about ten days, and ten days is hard to find.
+
+34. Weekend trips are fine but you spend most of them in transit.
+
+35. I went to Goa in March for four days and spent roughly eleven hours travelling. That ratio is not great.
+
+36. It was still worth it. The sea does something to your head that a photograph of the sea does not.
+
+37. I took about two hundred photos and looked at maybe six of them afterwards.
+
+38. That is the strange thing about photos. Taking them feels important and looking at them almost never happens.
+
+39. My phone tells me I have thirty-one thousand pictures. I have no idea what is in most of them.
+
+40. Every few months I decide to sort them out. I have never once finished.
+
+41. Books are the same. I buy them faster than I read them and I have made peace with it.
+
+42. There are about fourteen on the shelf I have not started. I look at them and feel slightly guilty and then buy another one.
+
+43. I finished one last week that I had been reading for four months, mostly ten pages at a time.
+
+44. It was good, but I wonder how much of it I would have absorbed if I had read it in a week instead.
+
+45. Reading on a phone is not the same. I get about three paragraphs in before something interrupts.
+
+46. Notifications are the enemy of anything that requires sustained attention.
+
+47. I turned almost all of them off about a year ago and I have never regretted it.
+
+48. Nobody has ever needed me urgently in a way that a notification would have solved.
+
+49. Music is background for me most of the time, which I feel slightly bad about.
+
+50. Occasionally I will sit and actually listen to an album from start to finish, and it is a completely different experience.
+
+51. My taste has barely changed in ten years. I am aware that is a slightly embarrassing thing to admit.
+
+52. Films I am worse at. I will start one, watch forty minutes, and then not go back for three weeks.
+
+53. Series are easier because the episodes are already the right size.
+
+54. Although I have abandoned more series than I have finished, usually somewhere in the second season.
+
+55. Sport I follow loosely. I know the results, I rarely watch the whole thing.
+
+56. Cricket is the exception. A good test match is five days of something that could go any way, and nothing else is like that.
+
+57. Nobody who did not grow up with it understands why five days is a feature rather than a problem.
+
+58. I tried explaining it to a colleague from Berlin and it did not go well.
+
+59. He asked what happens if it rains and I had to explain that sometimes nothing happens for a day and that is fine.
+
+60. Language is the thing that surprises me most when I travel. Not the difficulty, the assumptions.
+
+61. You do not realise how much you rely on tone until you are somewhere the tone means something else.
+
+62. I speak three languages badly and one properly, and the badly ones are more useful than I expected.
+
+63. People are extremely forgiving about grammar if you are clearly trying.
+
+64. Money is boring to talk about and important to think about, which is an unfortunate combination.
+
+65. I set up an automatic transfer on the first of every month and I try not to look at it.
+
+66. That has worked better than every budgeting system I have attempted.
+
+67. The trick was removing the decision, not improving the discipline.
+
+68. That is probably true of most habits. Make the good option automatic and the bad option slightly inconvenient.
+
+69. My phone stays in another room while I work now. Not because I am disciplined, but because walking is annoying.
+
+70. Family is the thing that stays constant while everything else changes, and I do not call home often enough.
+
+71. Every conversation starts with an apology about how long it has been, which is a strange way to begin.
+
+72. My mother asks the same four questions in the same order and I find it oddly comforting.
+
+73. Are you eating properly, are you sleeping, how is work, and when are you coming home.
+
+74. The answers are usually yes, not really, fine, and I am not sure yet.
+
+75. I moved cities four years ago and I still describe the other one as home about half the time.
+
+76. I do not know when that switches over, or if it does.
+
+77. New places take about a year before the streets stop needing a map.
+
+78. There is a specific moment where you take a shortcut without thinking about it, and that is when it becomes yours.
+
+79. I remember exactly where I was the first time that happened here. Outside a chemist, going towards the station.
+
+80. Friendship gets harder to maintain as everyone's schedules stop overlapping.
+
+81. The people I see most are not the people I am closest to. That took me a while to notice.
+
+82. Someone told me that adult friendship is mostly logistics and I think that is depressingly accurate.
+
+83. So I try to be the one who suggests the date, because otherwise nothing gets arranged.
+
+84. Six months goes past very quickly when nobody sends the message.
+
+85. Anyway. That is most of what I would say if you asked me what I have been up to.

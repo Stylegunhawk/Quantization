@@ -1,0 +1,184 @@
+# SCRIPT 1 of 3 — Work and technical life
+# Target: ~15 minutes. Read at a normal conversational pace, as if explaining
+# something to a colleague. Do NOT perform or project. The relaxed take scored
+# 55%; the performed one scored 39%.
+#
+# HOW TO RECORD
+#   - Same room, same mic, same distance as sample2. Consistency matters more
+#     than quality: the model learns whatever is constant across the clips.
+#   - Voice Memos is fine. It records at 48kHz, which is what we want.
+#   - Pause ~1 second between numbered passages. That gives clean cut points.
+#   - If you fumble a line, pause two seconds and say it again from the start
+#     of that passage. I will keep the better take.
+#   - Do not stop and restart the recording. One continuous file per script.
+#   - Drink water first. Fifteen minutes is longer than it sounds.
+
+1. I have been working on speech models for a few weeks now, mostly in the evenings after everything else is done.
+
+2. The setup is simple enough. One model stays in memory at a time, and I measure how long each one takes before I trust any of the numbers.
+
+3. Most of the interesting problems turn out to be about memory rather than raw speed.
+
+4. When something looks wrong, I read the log first. Then I check the measurement itself, before I change a single line of code.
+
+5. That habit has saved me a lot of time, and it has also saved me from fixing things that were never broken.
+
+6. Yesterday I spent about two hours chasing a bug that turned out to be a stale cache. The code was fine the whole time.
+
+7. There is a particular kind of frustration in that. You want the problem to be interesting, and instead it is just old data.
+
+8. I keep a note file open while I work. Anything surprising goes in it, with the date, because I will not remember the details next week.
+
+9. The laptop has eight gigabytes of memory, which sounds small until you realise how much you can fit if you are careful.
+
+10. Being careful mostly means loading one thing at a time and actually freeing it when you are done.
+
+11. I test on the smallest example that still fails. If it passes on the small one, the bug is somewhere in the setup, not the logic.
+
+12. A colleague asked me why I bother measuring everything. The honest answer is that I have been wrong too often to trust my intuition about speed.
+
+13. Benchmarks lie in both directions. Sometimes the first run is slow because nothing is warmed up, and sometimes it is fast because the data is already cached.
+
+14. So I run it three times and take the middle number. It is not sophisticated, but it stops me from reporting noise.
+
+15. The first version of anything I write is usually too clever. I go back the next morning and make it boring.
+
+16. Boring code is easier to read at three in the morning when something has gone wrong in production.
+
+17. I have started writing down what I expect to happen before I run something. When the result disagrees, one of us is wrong, and it is useful to know which.
+
+18. Documentation is the part everyone skips, including me, until the day you need to remember why a decision was made.
+
+19. There is a comment in one of my files that just says, do not change this, and I no longer remember what it was protecting.
+
+20. That is a lesson about comments. Write down the reason, not the instruction.
+
+21. Meetings are better when someone has written the agenda down beforehand. Even three lines is enough.
+
+22. I try to send a short summary afterwards. Two or three sentences, what we decided and who is doing what.
+
+23. Half the confusion on any project comes from people having slightly different pictures of the same plan in their heads.
+
+24. Writing it down forces the differences into the open, which is uncomfortable at first and useful immediately after.
+
+25. I reviewed a pull request this morning that changed four hundred lines. I asked if it could be split into three smaller ones.
+
+26. Small changes get reviewed properly. Large ones get approved with a thumbs up and nobody has actually read them.
+
+27. The best review comment I ever received was a question, not a correction. It asked what happens if the list is empty.
+
+28. It was empty, of course. It had been empty in testing for a month and nobody had noticed.
+
+29. Tests should check what the code does, not how it does it. Otherwise every refactor breaks the suite for no good reason.
+
+30. I have written tests that were so tightly coupled to the implementation that changing a variable name broke twelve of them.
+
+31. That is not a safety net. That is a tripwire.
+
+32. The database question comes up on every project. Someone wants to add a new table, someone else wants to add a column, and both are defensible.
+
+33. Usually the right answer depends on how the data will be read, not how it will be written.
+
+34. Reads outnumber writes by a wide margin in almost everything I have worked on.
+
+35. Caching is the classic example of a fix that creates two new problems. Now you have stale data and an invalidation strategy.
+
+36. I try to avoid a cache until I have measured that the thing is actually slow.
+
+37. Often it is not slow. It just felt slow because I was watching it.
+
+38. There is a difference between latency and throughput that people mix up constantly, including me, when I am tired.
+
+39. One is how long a single thing takes. The other is how many things finish in a given period. You can improve one and ruin the other.
+
+40. Queues are the same. Adding workers helps until the bottleneck moves somewhere else, usually the database.
+
+41. I read a post last week arguing that most systems are not big enough to need the architecture they have.
+
+42. I think that is right more often than people want to admit. Complexity has a cost that shows up later, on someone else's shift.
+
+43. The simplest thing that works is usually the right starting point. You can always add the complicated version once you know you need it.
+
+44. Going the other direction, removing complexity once it is in, is much harder. Everything ends up depending on it.
+
+45. I deleted about six hundred lines of code last month and nothing broke. That was a good day.
+
+46. Deleting code is underrated. It is the only change that cannot introduce a new bug in the thing you deleted.
+
+47. Version control saves you from your own confidence. I commit early and often, even when the work is half finished.
+
+48. Branch names matter more than people think. Coming back to something called temp fix two after a week is genuinely painful.
+
+49. I try to write the commit message as if a stranger will read it, because in six months that stranger is me.
+
+50. Continuous integration is one of those things that feels like overhead until the first time it catches something before a release.
+
+51. Then you never want to work without it again.
+
+52. Deployment should be boring. If deploying is exciting, something is wrong with the process.
+
+53. The best deployments I have been part of were the ones nobody noticed, including the people who did them.
+
+54. Rolling back should be as easy as rolling forward. That is the part teams forget until they need it at two in the morning.
+
+55. Monitoring tells you something is wrong. Logging tells you what. You need both and they answer different questions.
+
+56. An alert that fires constantly is not an alert, it is background noise, and people learn to ignore it within a week.
+
+57. I would rather have three alerts that always matter than thirty that mostly do not.
+
+58. Error messages are a user interface. A message that says something went wrong is not helping anyone.
+
+59. Say what failed, what was expected, and what to try next. Three pieces of information, and most messages contain none of them.
+
+60. I have started reading the source of libraries I depend on. Not all of it, just the part I am actually calling.
+
+61. It takes twenty minutes and it removes a surprising amount of guesswork.
+
+62. Dependencies are borrowed complexity. You did not write it, but you still own the behaviour when it breaks.
+
+63. Every package you add is a decision you will have to maintain, upgrade, and eventually justify.
+
+64. Security is the area where being lazy costs the most. Validate the input at the boundary, every time, no exceptions.
+
+65. Nobody has ever regretted checking the input too carefully.
+
+66. Performance work should start with a measurement and end with a measurement. Anything in between is guessing.
+
+67. I have optimised the wrong function more than once. It felt productive right up until the total time did not move.
+
+68. Learning something properly takes longer than it looks, and skipping the boring foundation always costs more later.
+
+69. I have restarted the same tutorial three times and I think that is fine. Some things need a few passes.
+
+70. The part I enjoy most is the moment where a thing that made no sense suddenly does, and you cannot remember why it was confusing.
+
+71. Someone asked me last week how I decide what to work on first. Mostly I ask which thing I would be embarrassed to explain if it broke.
+
+72. That question sorts a backlog faster than any scoring system I have tried.
+
+73. Estimates are guesses wearing a suit. I have stopped pretending otherwise and started giving ranges instead.
+
+74. A range is honest. It says here is the good case, here is the bad one, and here is what would push it toward the bad one.
+
+75. The hardest part of any project is not the code. It is agreeing on what the thing is supposed to do.
+
+76. I have watched two people argue for forty minutes before realising they agreed completely and were using one word differently.
+
+77. Naming is genuinely hard, and not in a funny way. A bad name spreads through a codebase and outlives everyone who touched it.
+
+78. I renamed a function last month and found nineteen places where the old name had leaked into comments and variable names.
+
+79. Refactoring is easiest when the tests are good and terrifying when they are not.
+
+80. There is a specific fear that comes from changing code with no test coverage. You are not editing, you are gambling.
+
+81. I try to add one test before I change anything, just to have a heartbeat monitor while I work.
+
+82. Reading other people's code is a skill separate from writing it, and I do not practise it nearly enough.
+
+83. Configuration is where simple projects go to become complicated. Every option is a branch that someone has to reason about.
+
+84. I have started defaulting aggressively and only exposing a setting when someone actually asks for it twice.
+
+85. Logging too much is almost as bad as logging nothing. You end up with a haystack and no needle.

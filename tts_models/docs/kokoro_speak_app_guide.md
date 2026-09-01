@@ -16,7 +16,7 @@ Navigate to the `tts_models` directory:
 cd tts_models
 ```
 
-Set up the environment and install only the application dependencies using [requirements_app.txt](file:///Users/siddesh.kale/quant/tts_models/requirements_app.txt):
+Set up the environment and install only the application dependencies using [requirements_app.txt](../requirements_app.txt):
 ```bash
 # Using uv (Recommended)
 uv venv
@@ -77,7 +77,7 @@ Run the script directly with unbuffered output so you can see live performance l
 ```
 
 ### Option B: Double-click from Finder (Runs in background)
-Double-click [Kokoro Speak.app](file:///Users/siddesh.kale/quant/tts_models/Kokoro%20Speak.app) in Finder. It runs as an accessory application in the background (no Dock icon, but a 🔈 icon will appear in the macOS menu bar).  
+Double-click [Kokoro Speak.app](../Kokoro%20Speak.app) in Finder. It runs as an accessory application in the background (no Dock icon, but a 🔈 icon will appear in the macOS menu bar).  
 *Note: Any crashes or logs during background launch are directed to `/tmp/kokoro-speak.log`.*
 
 ---
@@ -109,7 +109,7 @@ nc -U /tmp/kokoro-speak.sock < /dev/null
 If you want the application to automatically run when you log into your Mac:
 
 ### Option A: System Login Items (Easiest)
-Go to **System Settings** → **General** → **Login Items** and drag [Kokoro Speak.app](file:///Users/siddesh.kale/quant/tts_models/Kokoro%20Speak.app) into the list.
+Go to **System Settings** → **General** → **Login Items** and drag [Kokoro Speak.app](../Kokoro%20Speak.app) into the list.
 
 ### Option B: launchd Agent (Auto-restarts if it crashes)
 To install the plist daemon template (which logs to `/tmp/kokoro-speak.log`):
@@ -130,5 +130,5 @@ launchctl unload ~/Library/LaunchAgents/com.kokoro.speak.plist
 
 ## References
 
-* For detailed architecture notes on latency, TTFA (Time To First Audio), and streaming performance optimizations, check [docs/streaming.md](file:///Users/siddesh.kale/quant/tts_models/docs/streaming.md).
-* For benchmark comparisons with Piper, macOS `say`, and Inflect-Micro-v2, read the [README.md](file:///Users/siddesh.kale/quant/tts_models/README.md).
+* For detailed architecture notes on latency, TTFA (Time To First Audio), and streaming performance optimizations, check [docs/streaming.md](streaming.md).
+* For benchmark comparisons with Piper, macOS `say`, and Inflect-Micro-v2, read the [README.md](../README.md).
