@@ -10,7 +10,7 @@
 #
 #   
 #
-Qwen3: gwen, qn, quen, queen three
+Qwen3: gwen, qn, quen, queen three, q3asr
 Nemotron: nimoton, nemotone, nemo tone
 Parakeet: perakit
 Mel spectrogram: male spectrogram, mail spectrogram, melspectrogram, mel spectogram

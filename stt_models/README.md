@@ -1,8 +1,9 @@
 # STT Model Testing
 
 Local sandbox to compare Whisper and Qwen3-ASR on latency, RTF, and CPU/RAM
-peak — same pattern as `../tts_models`, adapted for speech-to-text. (Parakeet
-is on the list but not yet tested — see `docs/RESULTS.md` next steps.)
+peak — same pattern as `../tts_models`, adapted for speech-to-text. Whisper,
+Qwen3-ASR, Nemotron and Parakeet are all measured; **Parakeet-TDT-0.6B-v3 is
+the fastest and the most accurate** (`docs/RESULTS.md`).
 
 Each project folder in this repo gets its **own** venv (see `.gitignore`'s
 `*/.venv` rule) — this is not shared with `tts_models/.venv`.
@@ -31,8 +32,13 @@ diverged from `tts_models/metrics.py`; `docs/RESULTS.md` explains why.
     ./.venv/bin/python metrics.py                 # self-check the harness first
 
     ./.venv/bin/python run_whisper_mlx.py         # openai/whisper-small
+    ./.venv/bin/python run_qwen3_asr_mlx.py mlx-community/parakeet-tdt-0.6b-v3
     ./.venv/bin/python run_qwen3_asr_mlx.py mlx-community/Qwen3-ASR-0.6B-4bit
-    ./.venv/bin/python run_qwen3_asr_mlx.py mlx-community/Qwen3-ASR-1.7B-4bit
+    ./.venv/bin/python run_qwen3_asr_mlx.py mlx-community/nemotron-3.5-asr-streaming-0.6b-8bit
+
+Despite its name `run_qwen3_asr_mlx.py` is engine-agnostic — it is `load_model`
+plus `generate_transcription`, which filter kwargs against each model's own
+`generate` signature, so any `mlx_audio` STT repo works as an argument.
 
 One model per process keeps its memory baseline clean. Knobs:
 
@@ -65,17 +71,25 @@ long-form dictation ever needs it.
 ### Switching models (menu bar → Model)
 
 A submenu with a tick next to the loaded one. The choice is saved to `model.txt` (gitignored,
-like `vocab.txt` — it is which model *you* picked) and restored next launch; the default is Qwen3-ASR 0.6B, the fastest measured and the one with no tail
-hallucination.
+like `vocab.txt` — it is which model *you* picked) and restored next launch.
 
 | menu entry | mode | single-model peak |
 |---|---|---|
-| Qwen3-ASR 0.6B | batch — pastes when you stop | 1375MB |
-| Qwen3-ASR 1.7B | batch | **2426MB** — tightest that still runs here |
+| Parakeet 0.6B | batch | **2719MB** — fastest and most accurate, and the heaviest |
+| Qwen3-ASR 0.6B | batch — pastes when you stop | 1375MB — the startup default |
+| Qwen3-ASR 1.7B | batch | 2426MB |
 | Nemotron 0.6B — live | live — types as you speak | **942MB**, the lightest |
 
+Parakeet is 2.04× faster than Qwen3-0.6B and the only model that gets the benchmark clip
+fully right (`docs/RESULTS.md`), but it costs 2× the memory — so the *startup* default stays
+Qwen3-ASR 0.6B on a machine that boots with ~1.4GB free. Pick Parakeet once and `model.txt`
+remembers it; change `DEFAULT_MODEL` if you'd rather pay that at every launch.
+
 **Exactly one model is ever loaded.** Two resident peak at 2425MB, worse than the 1.7B alone,
-on a machine that already had under 1GB free. Switching frees the old model *before* loading
+on a machine that already had under 1GB free — and two Parakeets would be 5.4GB. This is the
+invariant the whole picker is built around, not a nicety: `docs/RESULTS.md` bug #14 is the
+time it broke silently and a 942MB model cost 1656MB. `--models --swap` re-checks it, and
+every entry above frees back to a peak of 0MB. Switching frees the old model *before* loading
 the new one, which returns all of it (MLX's peak drops to 0), so a swap never costs more than
 the heavier of the two. A swap takes 1.5–2.5s, runs off the run loop so the menu doesn't
 freeze, and stops any recording in progress — continuing to record against a freed model
@@ -127,7 +141,7 @@ revisions with `->`:
 
 The vocabulary applies here too, with one adjustment: only words followed by a space are
 fixed. The last word of a live transcript is still being decoded, and rewriting a fragment is
-how "desh" would become "Siddesh" mid-word. The final word is fixed when the session ends.
+how "koko" would become "Kokoro" mid-word. The final word is fixed when the session ends.
 
 ### Vocabulary (names the model keeps getting wrong)
 
@@ -155,7 +169,8 @@ Three things happen to the words on that list, weakest guarantee last:
    to touch those on purpose.
 3. Remaining unknown words are fuzzy-matched at a 0.75 cutoff, skipping anything in
    `/usr/share/dict/words`. Measured on this app's own captures: `nemotone`→Nemotron 0.88,
-   `nimoton`→0.80, `sudesh`→Siddesh 0.77 — while the dangerous neighbours ("when"→Qwen3,
+   `nimoton`→0.80, and a personal name from my own `vocab.txt` at 0.77 — while the
+   dangerous neighbours ("when"→Qwen3,
    "mix"→MLX) sit at 0.67, well clear of the cutoff and protected by the dictionary anyway.
 
 An alias may contain spaces, and that turns out to be the important case: every mishearing

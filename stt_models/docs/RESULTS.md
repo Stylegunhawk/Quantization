@@ -132,6 +132,10 @@ unmeasured. Accuracy alone is sufficient reason to keep it dropped.
 
 ## Recommendation
 
+> **Superseded 2026-08-31 by Parakeet-TDT-0.6B-v3** — 2.04× faster than the
+> 0.6B and the only model to get this clip fully right. See that section below.
+> What follows was the recommendation among the four models tested on 08-12.
+
 **Qwen3-ASR-0.6B-4bit.** Fastest (5.5× whisper-small), fastest to load,
 no tail hallucination, and 550MB less peak memory than the 1.7B. Its one
 known weakness is the "verbatim" → "Webb item" substitution.
@@ -374,9 +378,10 @@ ones are what actually close the gap:
   it 0.67, and the dictionary guard below protects it regardless, because
   "Gwen" is in `/usr/share/dict/words`.
 - **Fuzzy match, cutoff 0.75, skipping dictionary words.** Chosen from
-  measured ratios, not guessed: real errors land at 0.77–0.94
-  (`sudesh`→Siddesh 0.77, `nimoton`→Nemotron 0.80, `nemotone`→0.88,
-  `parakeets`→Parakeet 0.94) and the words that must not be rewritten land at
+  measured ratios, not guessed: real errors land at 0.77–0.94 (a personal name
+  from my own `vocab.txt` at 0.77 — the lowest seen, and what sets the cutoff —
+  then `nimoton`→Nemotron 0.80, `nemotone`→0.88, `parakeets`→Parakeet 0.94)
+  and the words that must not be rewritten land at
   0.67 (`when`→Qwen3, `mix`→MLX, `voltron`→Nemotron). A 0.10 margin is thin,
   which is why the dictionary guard exists as well — `when`, `mix`, `item`
   and `solid` are all in `web2`, so they are never candidates.
@@ -394,8 +399,10 @@ sentence is much worse than a missed fix.
 - Write down the clip's actual sentence and compute real WER — the only
   remaining unmeasured axis (see the accuracy warning above). `captures.jsonl`
   is now the better corpus for this than the single benchmark clip.
-- Add Parakeet-tdt-0.6b-v3 (mlx-community) for a third comparison point;
-  `README.md` already claims it is tested and it is not.
+- ~~Add Parakeet-tdt-0.6b-v3 (mlx-community) for a third comparison point;
+  `README.md` already claims it is tested and it is not.~~ **Done 2026-08-31** —
+  see "Parakeet-TDT-0.6B-v3" below. It is the new batch recommendation, and
+  needed no new harness code. `README.md` corrected.
 - ~~Consider back-porting fixes #1–#4 to `tts_models/metrics.py`.~~
   **Done 2026-08-13** (its bugs #9–#12). It kept torch, since Kokoro-PyTorch and
   Inflect genuinely need it, and its `results.csv` was migrated in place rather
@@ -408,7 +415,8 @@ sentence is much worse than a missed fix.
   88-char and a 231-char input; 7.25s of audio may be short enough that
   per-call fixed overhead still dominates.
 - ~~Streaming.~~ **Done 2026-08-17** — see "Streaming: Nemotron" below.
-  `mlx-community/parakeet-tdt-0.6b-v3` (2.5GB) is still untested, and
+  `mlx-community/parakeet-tdt-0.6b-v3` is now tested in batch (below) but
+  cannot stream — no cache-aware state is exposed for it.
   `Voxtral-Mini-4B-Realtime-2602-4bit` (3.1GB) stays deferred: its weights
   alone exceed the 1.7B Qwen's entire 2314MB peak.
 - `metrics.py` still cannot evaluate a streaming model — it times one blocking
@@ -651,6 +659,202 @@ exists, which a live microphone by definition does not, so there is no
 supported way to do this today. If a `mlx_audio` upgrade renames that method,
 live mode breaks and batch mode does not.
 
+## Parakeet-TDT-0.6B-v3 — the fastest and the most accurate, at 2× the memory
+
+`mlx-community/parakeet-tdt-0.6b-v3`, 2.3GB on disk (bf16 — mlx-community
+publishes no quantised variant). A TDT (token-and-duration Transducer)
+FastConformer. Listed as "tested" in `README.md` since this folder was
+created; it was not. It is now.
+
+It needed **no new code**: `run_qwen3_asr_mlx.py` was already engine-agnostic
+(`load_model` + `generate_transcription`, which filters kwargs against the
+model's own `generate` signature), so the same script takes any repo. The
+misleading filename is the only thing that hid that.
+
+    ./.venv/bin/python run_qwen3_asr_mlx.py mlx-community/parakeet-tdt-0.6b-v3
+
+### Results — all three models re-measured in one session, 2026-08-31
+
+The archived 2026-08-12 rows were **not** reused. The machine was at 3.9GB
+swap when this run started vs 1.27GB on 08-12, so every model was re-run.
+Qwen3-0.6B came back at RTF 0.0638 against its archived 0.0643 (**0.8%**),
+which is what licenses comparing across the two sessions at all.
+
+| model | RTF (median) | latency (s) | load (s) | MLX peak, load | MLX peak, inference | min free RAM |
+|---|---|---|---|---|---|---|
+| **parakeet-tdt-0.6b-v3** | **0.0313** | 0.227 | 1.69 | 2431MB | **2617MB** | 1082MB |
+| Qwen3-ASR-0.6B-4bit | 0.0638 | 0.463 | 0.90 | 681MB | 1311MB | 2071MB |
+| nemotron-0.6b-8bit (batch) | 0.1045 | 0.758 | 0.70 | 760MB | 925MB | 2380MB |
+
+- **Parakeet is 2.04× faster than Qwen3-0.6B** and 3.3× faster than Nemotron
+  decoded in batch. That makes it 11× whisper-small on the same clip.
+- It is also the **only model to load slowly** (1.69s vs 0.70–0.90s) and the
+  only one whose load moved swap at all (**+199MB**). Inference moved none.
+- **2617MB inference peak is the highest number in this document** — above the
+  1.7B Qwen's 2314MB, which this folder already declined to ship for that
+  reason. Whether that verdict transfers is argued below; it does not.
+
+Nemotron's batch RTF is new here too. Every previous Nemotron number was
+measured through `dictate_app.py --live-file`; this is the first time it ran
+through `metrics.py`, and it confirms the streaming path (RTF 0.10 at
+`[56, 13]`) costs essentially nothing over the model's own batch decode.
+
+### It gets the benchmark clip completely right — the first model to do so
+
+The 7.25s clip has been the source of this document's two long-running
+accuracy disputes. Parakeet settles both:
+
+| model | "verbatim" | "solid"/"solved" | tail |
+|---|---|---|---|
+| **parakeet** | **"verbatim"** ✓ | **"solid"** ✓ | clean |
+| Qwen3-ASR-0.6B | "Webb item" ✗ | "solid" ✓ | clean |
+| Qwen3-ASR-1.7B | "Verb item" ✗ | "solid" ✓ | clean |
+| nemotron 8-bit | *dropped* — "why the" ✗ | "solid" ✓ | clean |
+| whisper-small | "verbatim" ✓ | "solved" ✗ | 49 periods |
+
+Nobody had gotten both. Whisper had "verbatim" and lost "solid"; the Qwen
+sizes had "solid" and lost "verbatim"; Nemotron, measured here for the first
+time on this clip, is the worst of the four — it does not mangle "verbatim",
+it **deletes** it.
+
+Same caveat as everywhere else in this document: still no written ground
+truth, so this is a four-way consensus argument. It is a stronger one than
+before, because the two words now have a 4–1 and 4–1 majority instead of 2–1.
+
+### On the capture corpus, it wins on the words the vocabulary layer exists for
+
+Three clips from `captures/` whose words are known (`docs` has cited all three
+as ground truth). Raw model output, **vocabulary layer off**, so this is the
+model and not the post-processing:
+
+| said | parakeet | Qwen3-0.6B | Nemotron |
+|---|---|---|---|
+| "Nemotron Live Transcribe" | **"Nemotron Live Transcribe"** ✓ | "NemoTone Live Translate" ✗✗ | **"Nemotron Live Transcribe"** ✓ |
+| "Nemotron" (111735) | "Nematron" ~ | "Nimoton" ✗ | **"nemotron"** ✓ |
+| "Qwen3 ASR" | "Q3ASR" ~ | "QN three years ago" ✗ | "Queen three ASR" ✗ |
+| "should I test next" | **"should I test next"** ✓ | ✓ | "should attest next" ✗ |
+| "mel spectrogram" | "mail spectrogram" ~ | "Megaprogram" ✗ | "Mails Pector" ✗ |
+
+`~` means the existing vocabulary layer already fixes it — verified, not
+assumed: `Nematron`→Nemotron and `mail spectrogram`→Mel spectrogram both fire
+off aliases and fuzzy rules already in `vocab.txt`. Only **`Q3ASR` was new**,
+and it is the easiest kind of mangling this layer handles: not an English
+word, so one alias covers it. `Qwen3:` gained `q3asr` in `vocab.txt` and
+`vocab.example.txt`; `--check` passes.
+
+So after post-processing Parakeet is **5 of 5** on these clips, Qwen3 is 1 of
+5, and Nemotron is 3 of 5. Parakeet's one clear defect is a stutter it
+invents — "what more **mode mode** models" where the others write "what more
+models". A duplicated syllable is a visible error; "Live Translate" for "Live
+Transcribe" is an invisible one, which is the worse failure for dictation.
+
+### The 2617MB does not disqualify it, and the reason is the 1.7B's real problem
+
+This folder rejected Qwen3-1.7B at a 2314MB peak, so a 2617MB model looks
+like a straightforward re-run of that decision. It is not, because the 1.7B
+was rejected for being **slower and heavier** — 2.33× the time of the 0.6B for
+more memory, which is dominated on both axes and needs no memory argument at
+all. Parakeet is 2.04× *faster* than the 0.6B, so it is the first model here
+where memory is actually the price of something.
+
+What was measured on this run: minimum free RAM 1082MB, **no swap growth
+during inference**, and the +199MB of swap it did move happened during load.
+It fits, on the machine as it stood, with a smaller margin than anything else
+in this folder.
+
+Two things make that margin thinner than the table suggests, and both are
+about the app rather than the benchmark:
+
+- The benchmark process holds one model and exits. `dictate_app.py` stays
+  resident, and bug #14 is the record of what happens when a swap leaves two
+  models alive — Nemotron measured 1656MB instead of 942MB because Qwen3's
+  weights were still held by a `main()` local. Parakeet + anything is
+  ~3.5GB. The one-model-at-a-time design is what makes it survivable, and
+  that design is now load-bearing rather than merely tidy.
+- 2617MB is a **bf16** number. Every other model in this table is quantised
+  (4-bit or 8-bit). An 8-bit Parakeet would plausibly land near Nemotron's
+  925MB with most of the speed, and none exists on the Hub today — which is
+  the single highest-value thing anyone could do to this comparison.
+
+### Recommendation, and what it costs
+
+**Parakeet-TDT-0.6B-v3 replaces Qwen3-ASR-0.6B-4bit as the batch model**:
+2.04× faster, the only model to get the benchmark clip fully right, and 5/5
+on the capture corpus after post-processing where Qwen3 manages 1/5.
+
+Keep Nemotron for live mode — Parakeet is a TDT transducer and `mlx_audio`
+exposes no cache-aware streaming state for it, so the live path cannot use it
+without the same private-API surgery documented above, against a model that
+has no trained look-ahead settings to surgery *with*.
+
+Costs, stated plainly: 2× the inference memory, 2× the load time, a
+stutter-duplication failure mode the Qwen models do not have, and a bf16-only
+checkpoint on a machine that has wanted quantised weights for every other
+model in this folder.
+
+### Shipped in the app, as a menu entry and not as the default
+
+`Parakeet 0.6B` is now in `MODELS`, batch mode. Verified through the app's own
+path rather than the benchmark's:
+
+- `--models --swap`: **2719MB loaded-and-warmed, freeing back to 0MB**, same as
+  every other entry. That number is 100MB above the benchmark's 2617MB because
+  it includes the warm-up decode. Two Parakeets would be 5.4GB, so the
+  one-model-at-a-time invariant is now doing more work than it ever has.
+- `--file` on capture 111735: loaded in 2.9s, 15s of audio in **0.45s**, and
+  the vocabulary layer resolved both names — "Nematron"→Nemotron and
+  "Q3ASR"→Qwen3 — end to end, which is the first time this document's accuracy
+  claim and its post-processing claim have been checked in the same run.
+- `--live-file` unchanged at RTF 0.201, confirming the Nemotron path was not
+  disturbed.
+
+**The startup default stays Qwen3-ASR 0.6B.** Parakeet is the better model and
+the wrong thing to load automatically: `DEFAULT_MODEL` is what gets loaded at
+launch on a machine that boots with ~1.4GB free, and 2719MB of that is a
+choice worth making deliberately rather than every morning. `model.txt`
+remembers the pick, so it is a one-time click.
+
+Two small things fixed while wiring it in, both the same shape — a hardcoded
+model where a derived one belonged:
+
+- `REPO` was a second hand-maintained copy of the default repo string, free to
+  drift out of sync with `MODELS`. It is now `MODELS[DEFAULT_MODEL][0]`.
+- `--file` loaded `REPO` rather than the saved choice, so it could only ever
+  check the default — the model that needs checking least. It now loads what
+  the menu bar has selected, which is how Parakeet was verified above.
+
+### Open: the `[56, 3]` decision may rest on a misheard word
+
+Not a Parakeet finding, but this run produced the evidence and it reverses a
+shipped default, so it belongs here.
+
+`LIVE_ACS = [56, 3]` ships because of exactly one word on clip
+`live-20260817-143520`: `[56, 3]` read it as "**ordinary**" and `[56, 13]` as
+"**Oden Goder**", and the speaker confirmed "ordinary". That single
+confirmation outweighed a six-clip table favouring `[56, 13]`.
+
+Both of the other models transcribe that position as **"audio encoder"**:
+
+| model | opening phrase |
+|---|---|
+| parakeet | "Is the **audio encoder** like a mail spectrogram?" |
+| Qwen3-0.6B | "Is the **audio encoder** like, Megaprogram?" |
+| nemotron `[56, 13]` | "Is the **Oden Goder** like…" |
+| nemotron `[56, 3]` | "Is the **ordinary** like…" |
+
+"Oden Goder" and "ordinary" are both recognisable manglings of "audio
+encoder", and the sentence continues "…what input does the audio encoder
+take?", so the phrase is demonstrably in this clip. "Is the audio encoder
+like a mel spectrogram" is also the only reading that parses as English;
+"Is the ordinary like mel spectrogram audio encoder" does not.
+
+If that is right, then **neither** streaming setting got the word, the
+confirmation resolved a question the two settings were not actually disputing,
+and the six-clip fidelity table is unopposed — which points back at `[56, 13]`,
+the model default, at half the compute. The app has not been changed: only
+the speaker knows what was said, and this is the same missing-ground-truth
+gap that has blocked this question from the beginning.
+
 ## Corrections to the previous version of this document
 
 | Previous claim | Status |
@@ -660,3 +864,12 @@ live mode breaks and batch mode does not.
 | "Negative ram_spike is because load happens before measure()" | **Wrong mechanism.** See Bug #3. |
 | "Neither Qwen3-ASR size nailed 'verbatim'" | **Holds**, but whisper-small has its own error ("solved" vs "solid") that was missed. |
 | "No tail hallucination on Qwen3-ASR" | **Holds.** Reproduced on all runs. |
+
+Added 2026-08-31, on claims made since:
+
+| Previous claim | Status |
+|---|---|
+| "Qwen3-ASR-0.6B is the fastest" | **Superseded.** Parakeet is 2.04× faster. |
+| "Neither Qwen3 size nailed 'verbatim'" (still open) | **Closed.** Parakeet gets it, and "solid", on the same run. |
+| `README.md`: "Parakeet is on the list but not yet tested" | **Fixed.** Tested; it is now the batch recommendation. |
+| "`[56, 3]` ships because the speaker confirmed 'ordinary'" | **Questioned.** Two other models read that word as "audio encoder". Unresolved — see the open item above. |

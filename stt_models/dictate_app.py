@@ -99,7 +99,6 @@ from Quartz import (
 )
 
 # ---- CONFIG ---------------------------------------------------------------
-REPO = "mlx-community/Qwen3-ASR-0.6B-4bit"   # 5.5x faster than whisper-small, no tail loop
 LOCK_PATH = Path("/tmp/dictate.lock")
 HERE = Path(__file__).parent
 CAPTURE_DIR = HERE / "captures"
@@ -144,20 +143,32 @@ MODIFIER_MASK = (
 
 KEY_V, KEY_ESC, KEY_DELETE = 9, 53, 51
 # ---- models ----------------------------------------------------------------------------
-# Menu bar → Model. Exactly one is ever loaded: measured, two resident peak at 2425MB, worse
-# than the 1.7B alone (2314MB) which already left this 8GB machine under 1GB free. Switching
+# Menu bar → Model. EXACTLY ONE MODEL IS EVER RESIDENT. This is the load-bearing invariant of
+# this file on an 8GB M1, not a tidiness preference: measured, two resident peak at 2425MB,
+# worse than the 1.7B alone (2314MB) which already left this machine under 1GB free. Switching
 # frees the old model first, which returns all of it (peak drops to 0), so a swap never costs
-# more than the heavier of the two — see docs/RESULTS.md.
+# more than the heavier of the two — see docs/RESULTS.md, and bug #14 for the one time this
+# silently broke (a stray main() local kept the startup model alive, and a 942MB swap cost
+# 1656MB). `--models --swap` is the check; run it after touching this dict.
+#
+# Parakeet raises the ceiling: 2617MB resident, the heaviest entry here and above the 1.7B.
+# Two of *those* would be 5.2GB, i.e. hard swapping. Nothing may hold a second reference.
 #
 # "batch" transcribes once when you stop; "live" types as you speak. Adding a model is one
 # line here, as long as mlx_audio can load it and the mode matches how it decodes.
 MODELS = {
+    "Parakeet 0.6B": ("mlx-community/parakeet-tdt-0.6b-v3", "batch"),
     "Qwen3-ASR 0.6B": ("mlx-community/Qwen3-ASR-0.6B-4bit", "batch"),
     "Qwen3-ASR 1.7B": ("mlx-community/Qwen3-ASR-1.7B-4bit", "batch"),
     "Nemotron 0.6B — live": ("mlx-community/nemotron-3.5-asr-streaming-0.6b-8bit", "live"),
 }
-DEFAULT_MODEL = "Qwen3-ASR 0.6B"    # fastest measured, and the one with no tail hallucination
+# Parakeet is 2.04x faster and more accurate (docs/RESULTS.md), but it is also 2x the memory,
+# and this is the model loaded at *startup* on a machine that boots with ~1.4GB free. The
+# light one stays the default; pick Parakeet from the menu and the choice persists in
+# model.txt. Flip this line if you'd rather pay the memory every launch.
+DEFAULT_MODEL = "Qwen3-ASR 0.6B"
 MODEL_FILE = HERE / "model.txt"     # remembers the choice; same idea as vocab.txt
+REPO = MODELS[DEFAULT_MODEL][0]     # derived, not a second copy that can drift from MODELS
 LIVE_REPO = MODELS["Nemotron 0.6B — live"][0]
 LIVE_LANGUAGE = "en-US"      # a prompt_dictionary key, not a plain code — "en" also works
 # [left, right] look-ahead, one of the four the model was trained with. Settled by measurement
@@ -300,8 +311,9 @@ def apply_vocab(text: str, terms: list[str], aliases: dict[str, str]) -> str:
     2. Single-word aliases — likewise the only way to fix a mangling that is itself a real
        word ("gwen" for Qwen3), since pass 3 deliberately leaves those alone.
     3. Fuzzy, cutoff 0.75, skipping anything in the system dictionary. Measured on this
-       app's own captures: nemotone->Nemotron 0.88, nimoton->Nemotron 0.80,
-       sudesh->Siddesh 0.77, while the dangerous neighbours sit at 0.67.
+       app's own captures: nemotone->Nemotron 0.88, nimoton->Nemotron 0.80, and a
+       personal name from my own vocab.txt at 0.77 -- the lowest real error seen, which
+       is what sets the cutoff. The dangerous neighbours sit at 0.67.
     """
     phrases = {alias: term for alias, term in aliases.items() if " " in alias}
     if phrases:
@@ -430,7 +442,7 @@ def vocab_stable(text: str, terms: list[str], aliases: dict[str, str]) -> str:
     """Apply the vocabulary to every word except the last one.
 
     The last word of a live transcript is still being formed, and fuzzy-matching a fragment
-    is how "desh" becomes "Siddesh" — visible in this repo's own captures corpus. Words with
+    is how "koko" becomes "Kokoro" (0.80) mid-word — visible in this repo's own captures. Words with
     a space after them are settled, so those are safe to fix; the tail is left raw until the
     next update, or until the session ends and the whole string is fixed.
     """
@@ -1332,8 +1344,12 @@ def cli_live(path: str) -> None:
 
 
 def cli_file(path: str) -> None:
-    """Self-check: transcribe a file, no mic, no Accessibility, no paste."""
-    model = load_and_warm()
+    """Self-check: transcribe a file, no mic, no Accessibility, no paste.
+
+    Uses the model chosen in the menu bar, not a hardcoded one — otherwise this can only ever
+    check the default, which is exactly the model that needs checking least.
+    """
+    model = load_and_warm(*MODELS[load_choice()])
     t0 = time.perf_counter()
     text = transcribe(model, Path(path))
     assert text, "empty transcript"
@@ -1410,9 +1426,9 @@ def cli_check() -> None:
     assert diff_update("abc", "x") == (3, "x")                       # nothing in common
     # The tail word is left raw so a half-decoded fragment is never rewritten: the same word
     # must be left alone while it is still the last thing typed, and fixed once a space proves
-    # it finished. This matters more since fuzzy started matching aliases too — "desh" now
-    # reaches Siddesh through the "sudesh" alias (0.80), so a half-typed name would be
-    # rewritten mid-word without this.
+    # it finished. This matters more since fuzzy started matching aliases too — "nemot" now
+    # reaches Nemotron (0.77), and "koko" reaches Kokoro (0.80), so a half-typed word would
+    # be rewritten mid-word without this.
     assert vocab_stable("streaming nimoton", terms, aliases) == "streaming nimoton"
     assert vocab_stable("streaming nimoton ", terms, aliases) == "streaming Nemotron "
     assert vocab_stable("nimoton is", terms, aliases) == "Nemotron is"

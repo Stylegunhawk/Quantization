@@ -1,10 +1,12 @@
-"""Qwen3-ASR (0.6B / 1.7B, 4-bit MLX quant) via mlx-audio.
+"""Any mlx-audio STT model, one repo per process. Name is historical — this is
+just load_model + generate_transcription, which filter kwargs against each
+model's own generate() signature, so Parakeet and Nemotron work unchanged.
 
 Pass one repo per process for a clean per-model memory reading — running both in
 one process leaves the first model's weights resident while the second's baseline
 is taken (that drift is visible in the pre-2026-08-12 results.csv rows).
 
-    ./.venv/bin/python run_qwen3_asr_mlx.py mlx-community/Qwen3-ASR-0.6B-4bit
+    ./.venv/bin/python run_qwen3_asr_mlx.py mlx-community/parakeet-tdt-0.6b-v3
     RUNS=5 ./.venv/bin/python run_qwen3_asr_mlx.py mlx-community/Qwen3-ASR-1.7B-4bit
 """
 
