@@ -1,17 +1,25 @@
 # SCRIPT 1 of 3 — Work and technical life
-# Target: ~15 minutes. Read at a normal conversational pace, as if explaining
+# Runs ~13 minutes at a normal conversational pace (measured: 12.7 min at 150 wpm
+# of speech). Do NOT stretch it to fill a clock -- read as if explaining
 # something to a colleague. Do NOT perform or project. The relaxed take scored
 # 55%; the performed one scored 39%.
 #
 # HOW TO RECORD
+#   - TURN VOICE ISOLATION OFF. Control Centre > Mic Mode > Standard.
+#     Measured twice on your own voice: it costs 23.2pp of speaker identity
+#     (98.7% -> 75.5% on identical passages), because it strips sub-300Hz chest
+#     resonance. Worse for training, it punches hard digital-zero holes INSIDE
+#     sentences -- 44 interior gaps, median 223ms, 19.7% of clip duration --
+#     erasing the breaths and plosive stops the model must learn pause structure
+#     from. It does not hurt transcription at all, which is why it looks safe.
 #   - Same room, same mic, same distance as sample2. Consistency matters more
 #     than quality: the model learns whatever is constant across the clips.
 #   - Voice Memos is fine. It records at 48kHz, which is what we want.
 #   - Pause ~1 second between numbered passages. That gives clean cut points.
-#   - If you fumble a line, pause two seconds and say it again from the start
-#     of that passage. I will keep the better take.
+#   - Fumbled a line? Pause two seconds and redo that passage from its
+#     start. The aligner keeps the better take and drops the other.
 #   - Do not stop and restart the recording. One continuous file per script.
-#   - Drink water first. Fifteen minutes is longer than it sounds.
+#   - Drink water first. Thirteen minutes is longer than it sounds.
 
 1. I have been working on speech models for a few weeks now, mostly in the evenings after everything else is done.
 

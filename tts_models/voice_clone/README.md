@@ -180,6 +180,36 @@ My recordings and the dataset built from them are deliberately not in this repo
 Pick the reference take once and never change it — the ceiling and floor are both
 measured against it, so every percentage in this README moves if it does.
 
+## Why the dataset is 24kHz, not 48kHz
+
+Record at 48kHz, but **train on 24kHz**. This is a real requirement, not a
+size saving.
+
+`speech_tokenizer/preprocessor_config.json` is an `EncodecFeatureExtractor`
+with `"sampling_rate": 24000`. Nothing in the pipeline resamples for you:
+
+* `reference/upstream_dataset.py:45` loads with `sr=None` and `:105` asserts
+  `sr == 24000` — *"Only support 24kHz audio"*. Both third-party forks inherit
+  it verbatim; the fork's reworded message ("Audio should be resampled before
+  calling") says the same thing more explicitly, but is not upstream's text.
+* `reference/Qwen3-TTS-EasyFinetuning/src/dataset.py:46` forces
+  `librosa.load(x, sr=24000)`, and its pipeline resamples to 24k up front.
+
+Feeding 48kHz does not corrupt anything quietly — it fails loudly. Training
+imports that same loader (`upstream_sft_12hz.py:23` is `from dataset import
+TTSDataset`), so a 48kHz set dies on an `AssertionError` at the first batch,
+roughly 15 minutes in, after the base download and tokenisation have already
+burned GPU time.
+
+Nothing is lost: 24kHz gives 12kHz Nyquist and the mel `fmax` is 12000, so the
+model never looks higher. The Voice Memos source is 62kbps lossy AAC with real
+content only to ~8kHz regardless of its 48000 container.
+
+Use `scipy.signal.resample_poly(a, 24000, 48000)` — polyphase at an exact 2:1
+ratio. Recovered verbatim in `analysis/history/make_24k.py`. Do not substitute a
+different resampler: `dataset/finetune_24k/` is what produced the 9.5% result, so
+changing resamplers would make a new run differ by more than its content.
+
 ## Reproducing
 
 ```bash

@@ -1,5 +1,18 @@
 # SCRIPT 3 of 3 — Explaining, narrating, reacting
-# Target: ~15 minutes. Same room, same mic, same distance as scripts 1 and 2.
+# Runs ~12 minutes at the pace measured on script 1 (150 wpm of speech).
+# Same room, same mic, same distance as scripts 1 and 2.
+#
+# HOW TO RECORD
+#   - TURN VOICE ISOLATION OFF. Control Centre > Mic Mode > Standard.
+#     Measured twice on your own voice: it costs 23.2pp of speaker identity
+#     (98.7% -> 75.5% on identical passages), because it strips sub-300Hz chest
+#     resonance. Worse for training, it punches hard digital-zero holes INSIDE
+#     sentences -- 44 interior gaps, median 223ms, 19.7% of clip duration --
+#     erasing the breaths and plosive stops the model must learn pause structure
+#     from. It does not hurt transcription at all, which is why it looks safe.
+#   - Voice Memos, one continuous file, ~1s between passages.
+#   - Fumbled a line? Pause two seconds and redo that passage from its
+#     start. The aligner keeps the better take and drops the other.
 #
 # This one covers what the other two miss: explaining something step by step,
 # telling a short story with a beginning and an end, reading numbers and dates

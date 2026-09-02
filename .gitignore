@@ -12,10 +12,22 @@ __pycache__/
 # local; scripts/*.txt, analysis/*.py and the notebooks are tracked.
 tts_models/voice_clone/recordings/
 tts_models/voice_clone/dataset/
-tts_models/voice_clone/**/*.wav
-tts_models/voice_clone/**/*.m4a
-tts_models/voice_clone/**/*.mp3
-tts_models/voice_clone/**/*.flac
+
+# No audio anywhere in this repo, at any depth. The per-directory rules above
+# only covered voice_clone/, so two takes recorded straight to the repo root
+# (mac_voice_isolation_mode.m4a, script_voice_iso_sample_test.m4a) sat unignored
+# and `git add -A` would have published them. Every audio file that has appeared
+# here has been a recording of my own voice, and this repo is public. No audio
+# is tracked, so a blanket rule cannot break an existing file -- if a benchmark
+# output ever does need tracking, unignore that one path explicitly.
+*.wav
+*.m4a
+*.mp3
+*.flac
+*.aiff
+*.aif
+*.caf
+*.ogg
 
 # My own voice. Were tracked and public until the Sep 2026 history rewrite --
 # keep them ignored so a `git add -A` cannot re-leak them.
