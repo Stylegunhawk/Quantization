@@ -159,15 +159,27 @@ def transcribe(model, audio, sr: int, tmp: str) -> list[dict]:
         result = generate_transcription(
             model=model, audio=str(piece), output_path=tmp, format="txt"
         )
+        # Re-heard overlap words MUST go. Measured both ways on these two takes:
+        # dropping them gives 166 clips, keeping them 127. difflib aligns
+        # globally, so a duplicated span lets it match half a passage against one
+        # copy and half against the other; the runs then sit more than GAP apart
+        # and the densest-run filter keeps only a fragment. The comment above
+        # means Parakeet's merge does not decide the *text* -- not that duplicate
+        # words are free.
+        fresh = True  # a piece's first surviving token starts a word, always
         for sent in result.sentences:
             for tk in sent.tokens:
                 start = tk.start + lo
-                # re-heard words from the previous piece's overlap
                 if words and start < words[-1]["e"] - 0.05:
                     continue
-                # subword pieces: a leading space starts a word, 'ing' continues one
-                if tk.text.startswith(" ") or not words:
+                # subword pieces: a leading space starts a word, 'ing' continues one.
+                # Without `fresh` a piece opening on a continuation fragment glues
+                # onto the previous piece's last word: "slightly" + "htly" ->
+                # "slightlyhtly", which loses "slightly" as a matchable word and
+                # took script_2 #68 below the drop threshold.
+                if fresh or tk.text.startswith(" ") or not words:
                     words.append({"w": tk.text.strip(), "s": start, "e": tk.end + lo})
+                    fresh = False
                 else:
                     words[-1]["w"] += tk.text
                     words[-1]["e"] = tk.end + lo
@@ -247,6 +259,12 @@ def main() -> None:
 
     rows, report, n, total = [], [], 0, 0.0
     for src in SOURCES:
+        # Clip names carry take + passage number (s2_p073.wav), not a running
+        # counter. alignment_review.json reports a flagged clip by take and
+        # passage, and with two takes merged a counter no longer says which wav
+        # that is -- and every script_2 name would shift if script_1 aligned one
+        # passage differently. Stable names survive re-recording one take.
+        tag = (m.group(1) if (m := re.match(r"script_(\d+)", src.stem)) else src.stem)
         script_path = SCRIPTS / f"{src.stem}.txt"
         if not script_path.exists():
             raise SystemExit(
@@ -261,7 +279,7 @@ def main() -> None:
         for r in matched:
             n += 1
             total += r["end"] - r["start"]
-            path = OUT / "wavs" / f"utt{n:04d}.wav"
+            path = OUT / "wavs" / f"s{tag}_p{r['num']:03d}.wav"
             sf.write(str(path), audio[int(r["start"] * sr) : int(r["end"] * sr)], sr)
             rows.append({"audio": f"./wavs/{path.name}", "text": r["text"],
                          "ref_audio": "./ref.wav"})
